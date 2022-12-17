@@ -3,27 +3,12 @@
 
 #include <allegro.h>
 
-#define BLOCK_1x1x1_RED       0x01
-#define BLOCK_1x1x1_GREEN     0x02
-#define BLOCK_1x1x1_BLUE      0x03
-#define BLOCK_MAX             0x04
-
-/*! \brief Width of a single 1x1 block bitmap. */
-#define BLOCK_W               16
-/*! \brief Height of a single 1x1 block bitmap. */
-#define BLOCK_H               16
-/*! \brief Isometric offset modifier for drawing blocks. */
-#define BLOCK_OFFSET          8
-
-/*! \brief Increment by which dragging modifies the viewport. */
-#define DRAG_VIEW_INC         5
+#include "block.h"
+#include "grid.h"
 
 #define ERROR_ALLEGRO 1
 #define ERROR_ALLEGRO_GFX 2
 #define ERROR_ALLEGRO_MOUSE 4
-
-#define GRID_W 64
-#define GRID_H 64
 
 #define PATH_BLOCKS "blocks"
 #define PATH_SEP '/'
@@ -47,58 +32,46 @@ BITMAP* load_block_bitmap( const char* filename ) {
    /* Load and adjust the bitmap. */
    bmp_out = load_bitmap( filename_path, NULL );
 
-#if 0
-   /* Make the bitmap transparent. */
-   /* Obsolete; just modify the palette directly in the assets for now. */
-   for( y = 0 ; bmp_out->h > y ; y++ ) {
-      for( x = 0 ; bmp_out->w > x ; x++ ) {
-         px = getpixel( bmp_out, x, y );
-         if(
-            255 == getr( px ) &&
-            0 == getg( px ) &&
-            255 == getb( px )
-         ) {
-            putpixel( bmp_out, x, y, bitmap_mask_color( bmp_out ) );
-         }
-      }
-   }
-#endif
-
    return bmp_out;
-}
-
-void save_screenshot( const char* filename ) {
-   BITMAP* bmp_ss = NULL;
-   PALETTE pal;
-
-   get_palette( pal );
-   bmp_ss = create_sub_bitmap( screen, 0, 0, SCREEN_W, SCREEN_H );
-   save_bitmap( filename, bmp_ss, pal );
-
-   destroy_bitmap( bmp_ss );
 }
 
 void draw_grid(
    BITMAP* buffer, int view_x, int view_y,
-   uint8_t grid[GRID_H][GRID_W], BITMAP* blocks[BLOCK_MAX]
+   uint8_t grid[GRID_TILE_H][GRID_TILE_W], BITMAP* blocks[BLOCK_MAX]
 ) {
    int x = 0,
       y = 0;
 
-   for( y = 0 ; GRID_H > y ; y++ ) {
+   for( y = 0 ; GRID_TILE_H > y ; y++ ) {
 
       /* Draw X coordinates backwards to fix overlapping. */
-      for( x = GRID_W - 1 ; 0 <= x ; x-- ) {
+      for( x = GRID_TILE_W - 1 ; 0 <= x ; x-- ) {
+
+         /* Skip empty blocks. */
+         if( 0 >= blocks[grid[y][x]] ) {
+            continue;
+         }
 
          /* TODO: Optimize drawing off-screen out. */
 
-         draw_sprite( buffer, blocks[grid[y][x] + 1],
+         draw_sprite( buffer, blocks[grid[y][x]],
             /* Isometric transform X. */
-            view_x + ((x * BLOCK_W / 2) + (y * BLOCK_W / 2)),
+            view_x + ((x * BLOCK_PX_W / 2) + (y * BLOCK_PX_W / 2)),
             /* Isometric transform Y. */
-            view_y + ((y * BLOCK_OFFSET / 2) - (x * BLOCK_OFFSET / 2) ));
+            view_y + ((y * BLOCK_PX_OFFSET / 2) - (x * BLOCK_PX_OFFSET / 2) ));
       }
    }
+}
+
+void save_screenshot( BITMAP* buffer, const char* filename ) {
+   BITMAP* bmp_ss = NULL;
+   PALETTE pal;
+
+   get_palette( pal );
+   bmp_ss = create_sub_bitmap( buffer, 0, 0, SCREEN_W, SCREEN_H );
+   save_bitmap( filename, bmp_ss, pal );
+
+   destroy_bitmap( bmp_ss );
 }
 
 int main() {
@@ -107,14 +80,14 @@ int main() {
       i = 0,
       view_x = 0,
       view_y = 0,
-      mouse_last_x = 0,
-      mouse_last_y = 0;
+      tile_x = 0,
+      tile_y = 0;
    BITMAP* blocks[BLOCK_MAX] = { NULL };
    BITMAP* buffer = NULL;
-   uint8_t grid[GRID_H][GRID_W];
+   uint8_t grid[GRID_TILE_H][GRID_TILE_W];
 
    memset( blocks, '\0', sizeof( blocks ) );
-   memset( grid, '\0', GRID_W * GRID_H );
+   memset( grid, '\0', GRID_TILE_W * GRID_TILE_H );
 
    /* === Setup === */
 
@@ -161,36 +134,33 @@ int main() {
       blit( buffer, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H );
 
       if( mouse_b & 0x01 ) {
-         /* printf( "%d, %d\n", mouse_x, mouse_y ); */
-         /* putpixel( screen, mouse_x, mouse_y, makecol( 0xff, 0xff, 0xff ) ); */
+         grid_trans_coords(
+            &tile_x, &tile_y, mouse_x, mouse_y, view_x, view_y );
 
-         /* Handle viewport dragging if we're not clicking on anything else. */
-         if( mouse_last_x < mouse_x ) {
-            view_x += DRAG_VIEW_INC;
-         } else if( mouse_last_x > mouse_x ) {
-            view_x -= DRAG_VIEW_INC;
-         }
-         if( mouse_last_y < mouse_y ) {
-            view_y += DRAG_VIEW_INC;
-         } else if( mouse_last_y > mouse_y ) {
-            view_y -= DRAG_VIEW_INC;
+         if(
+            0 <= tile_x && GRID_TILE_W > tile_x &&
+            0 <= tile_y && GRID_TILE_H > tile_y
+         ) {
+            printf( "tile clicked: %d, %d\n", tile_x, tile_y );
+            grid[tile_y][tile_x] = BLOCK_1x1x1_BLUE;
+         } else {
+            /* Handle viewport dragging if we're not clicking on anything else.
+             */
+            grid_drag( &view_x, &view_y, mouse_x, mouse_y );
          }
       }
-
-      mouse_last_x = mouse_x;
-      mouse_last_y = mouse_y;
 
       /* Finish loop. */
       if( keypressed() ) {
          running = 0;
       }
       release_screen();
-      show_mouse( screen );
+      show_mouse( screen ); /* Enable mouse after drawing. */
       vsync();
 
    } while( running );
 
-   save_screenshot( "out.bmp" );
+   save_screenshot( buffer, "out.bmp" );
 
 cleanup:
    if( ERROR_ALLEGRO != retval ) {
