@@ -1,7 +1,7 @@
 
 # vim: ft=make noexpandtab
 
-ALLEGO_C_FILES := src/main.c
+ALLEGO_C_FILES := src/main.c src/grid.c
 
 MD := mkdir -p
 
@@ -10,10 +10,10 @@ MD := mkdir -p
 all: allego
 
 allego: $(addprefix obj/$(shell uname -s)/,$(subst .c,.o,$(ALLEGO_C_FILES)))
-	gcc -o $@ $< $(shell pkg-config allegro --libs)
+	gcc -o $@ $^ $(shell pkg-config allegro --libs)
 
 allegw32.exe: $(addprefix obj/nt/,$(subst .c,.o,$(ALLEGO_C_FILES)))
-	wcl386 -fe=$@ -bcl=nt_win $<
+	wcl386 -fe=$@ -bcl=nt_win $^
 
 obj/$(shell uname -s)/%.o: %.c
 	$(MD) $(dir $@)
