@@ -35,6 +35,26 @@ BITMAP* load_block_bitmap( const char* filename ) {
    return bmp_out;
 }
 
+void draw_toolbox(
+   BITMAP* buffer, int toolbox_selected, BITMAP* blocks[BLOCK_MAX]
+) {
+   int i = 0,
+      bg = 0;
+
+   for( i = 1 ; BLOCK_MAX > i ; i++ ) {
+      if( i == toolbox_selected ) {
+         bg = makecol( 255, 255, 255 );
+      } else {
+         bg = makecol( 0, 0, 0 );
+      }
+
+      rectfill(
+         buffer, 0, (i - 1) * BLOCK_PX_H, BLOCK_PX_W, i * BLOCK_PX_H, bg );
+   
+      draw_sprite( buffer, blocks[i], 0, (i - 1) * BLOCK_PX_H );
+   }
+}
+
 void draw_grid(
    BITMAP* buffer, int view_x, int view_y,
    uint8_t grid[GRID_TILE_H][GRID_TILE_W], BITMAP* blocks[BLOCK_MAX]
@@ -134,7 +154,8 @@ int main() {
       view_x = 0,
       view_y = 0,
       tile_x = 0,
-      tile_y = 0;
+      tile_y = 0,
+      toolbox_selected = 1;
    BITMAP* blocks[BLOCK_MAX] = { NULL };
    BITMAP* buffer = NULL;
    uint8_t grid[GRID_TILE_H][GRID_TILE_W];
@@ -184,9 +205,30 @@ int main() {
 
       draw_grid( buffer, view_x, view_y, grid, blocks );
 
+      /* Draw toolbox on top of grid. */
+      draw_toolbox( buffer, toolbox_selected, blocks );
+
       blit( buffer, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H );
 
       if( mouse_b & 0x01 ) {
+         /* Left mouse button down. */
+
+         /* Check to see if the toolbox was clicked. */
+         /* TODO: Support dragging out of the toolbox. */
+         if(
+            BLOCK_PX_W > mouse_x &&
+            BLOCK_PX_H * (BLOCK_MAX - 1) > mouse_y
+         ) {
+            /* Click was inside the toolbox... but which block? */
+            for( i = 1 ; BLOCK_MAX > i ; i++ ) {
+               if( mouse_y < (i * BLOCK_PX_H) ) {
+                  toolbox_selected = i;
+                  break;
+               }
+            }
+         }
+
+         /* Get isometric mouse coordinates. */
          grid_from_screen_coords(
             &tile_x, &tile_y, mouse_x, mouse_y, view_x, view_y );
 
@@ -194,11 +236,23 @@ int main() {
             0 <= tile_x && GRID_TILE_W > tile_x &&
             0 <= tile_y && GRID_TILE_H > tile_y
          ) {
-            grid[tile_y][tile_x] = BLOCK_1x1x1_BLUE;
+            /* Click was inside the grid! */
+            grid[tile_y][tile_x] = toolbox_selected;
          } else {
             /* Handle viewport dragging if we're not clicking on anything else.
              */
             grid_drag( &view_x, &view_y, mouse_x, mouse_y );
+         }
+      } else if( mouse_b & 0x02 ) {
+         /* Right mouse button down. */
+
+         grid_from_screen_coords(
+            &tile_x, &tile_y, mouse_x, mouse_y, view_x, view_y );
+         if(
+            0 <= tile_x && GRID_TILE_W > tile_x &&
+            0 <= tile_y && GRID_TILE_H > tile_y
+         ) {
+            grid[tile_y][tile_x] = 0;
          }
       }
 
