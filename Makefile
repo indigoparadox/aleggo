@@ -5,30 +5,35 @@ ALLEGO_C_FILES := src/main.c src/grid.c
 
 MD := mkdir -p
 
+CFLAGS_GCC :=
+
+SANITIZE := -Werror -Wall -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
+
+allego: CC_GCC := gcc
+allego: CFLAGS_GCC := $(shell pkg-config allegro --cflags) $(SANITIZE)
+allego: LDFLAGS_GCC := $(shell pkg-config allegro --libs) $(SANITIZE)
+
+allegd.exe: CC_GCC := i586-pc-msdosdjgpp-gcc
+allegd.exe: CFLAGS_GCC += -DDOS -fgnu89-inline -I$(ALLEGRO_DJGPP_ROOT)/include
+allegd.exe: LDFLAGS_GCC += -L$(ALLEGRO_DJGPP_ROOT)/lib -lalleg
+
 .PHONY: clean
 
-all: allego
+all:
 
 allego: $(addprefix obj/$(shell uname -s)/,$(subst .c,.o,$(ALLEGO_C_FILES)))
-	gcc -o $@ $^ $(shell pkg-config allegro --libs)
+	$(CC_GCC) -o $@ $^ $(LDFLAGS_GCC)
 
 allegd.exe: $(addprefix obj/dos/,$(subst .c,.o,$(ALLEGO_C_FILES)))
-	wcl386 -l=dos4g -fe=$@ -s -3s -k128k dos/clib3s.lib alleg.lib $^
-
-allegw32.exe: $(addprefix obj/nt/,$(subst .c,.o,$(ALLEGO_C_FILES)))
-	wcl386 -l=alleg -fe=$@ -bcl=nt_win $^
+	$(CC_GCC) -o $@ $^ $(LDFLAGS_GCC)
 
 obj/$(shell uname -s)/%.o: %.c
 	$(MD) $(dir $@)
-	gcc -c -o $@ $< $(shell pkg-config allegro --cflags)
+	$(CC_GCC) -c -o $@ $< $(CFLAGS_GCC)
 
 obj/dos/%.o: %.c
 	$(MD) $(dir $@)
-	wcc386 -DDOS -bt=dos4g -s -3s -fo=$@ $(<:%.c=%)
-
-obj/nt/%.o: %.c
-	$(MD) $(dir $@)
-	wcc386 -bt=nt -fo=$@ $(<:%.c=%)
+	$(CC_GCC) $(CFLAGS_GCC) -c -o $@ $<
 
 clean:
 	rm -rf obj allego allegw32.exe *.err allegd.exe

@@ -13,15 +13,10 @@
 #define PATH_BLOCKS "blocks"
 #define PATH_SEP '/'
 
-typedef unsigned char uint8_t;
-
 #define error_printf( ... ) fprintf( stderr, __VA_ARGS__ )
 
 BITMAP* load_block_bitmap( const char* filename ) {
    BITMAP* bmp_out = NULL;
-   int x = 0,
-      y = 0,
-      px = 0;
    char filename_path[PATH_MAX + 1];
 
    /* Build the path to the bitmap. */
@@ -57,7 +52,7 @@ void draw_toolbox(
 
 void draw_grid(
    BITMAP* buffer, int view_x, int view_y,
-   uint8_t grid[GRID_TILE_D][GRID_TILE_H][GRID_TILE_W],
+   unsigned char grid[GRID_TILE_D][GRID_TILE_H][GRID_TILE_W],
    BITMAP* blocks[BLOCK_MAX]
 ) {
    int x = -1,
@@ -152,7 +147,7 @@ void save_screenshot( BITMAP* buffer, const char* filename ) {
 }
 
 int main() {
-   uint8_t running = 1;
+   unsigned char running = 1;
    int retval = 0,
       i = 0,
       view_x = 0,
@@ -164,7 +159,7 @@ int main() {
       toolbox_selected = 1;
    BITMAP* blocks[BLOCK_MAX] = { NULL };
    BITMAP* buffer = NULL;
-   uint8_t grid[GRID_TILE_D][GRID_TILE_H][GRID_TILE_W];
+   unsigned char grid[GRID_TILE_D][GRID_TILE_H][GRID_TILE_W];
 
    memset( blocks, '\0', sizeof( blocks ) );
    memset( grid, '\0', GRID_TILE_W * GRID_TILE_H * GRID_TILE_D );
