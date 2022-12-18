@@ -57,10 +57,12 @@ void draw_toolbox(
 
 void draw_grid(
    BITMAP* buffer, int view_x, int view_y,
-   uint8_t grid[GRID_TILE_H][GRID_TILE_W], BITMAP* blocks[BLOCK_MAX]
+   uint8_t grid[GRID_TILE_D][GRID_TILE_H][GRID_TILE_W],
+   BITMAP* blocks[BLOCK_MAX]
 ) {
    int x = -1,
       y = 2,
+      z = 0,
       x2 = -1,
       y2 = GRID_TILE_H + 2,
       px_x = 0,
@@ -118,20 +120,22 @@ void draw_grid(
       px_y2,
       makecol( 0, 0, 0 ) );
 
-   for( y = 0 ; GRID_TILE_H > y ; y++ ) {
+   for( z = 0 ; GRID_TILE_D > z ; z++ ) {
+      for( y = 0 ; GRID_TILE_H > y ; y++ ) {
 
-      /* Draw X coordinates backwards to fix overlapping. */
-      for( x = GRID_TILE_W - 1 ; 0 <= x ; x-- ) {
+         /* Draw X coordinates backwards to fix overlapping. */
+         for( x = GRID_TILE_W - 1 ; 0 <= x ; x-- ) {
 
-         /* Skip empty blocks. */
-         if( 0 >= blocks[grid[y][x]] ) {
-            continue;
+            /* Skip empty blocks. */
+            if( 0 >= blocks[grid[z][y][x]] ) {
+               continue;
+            }
+
+            /* TODO: Optimize drawing off-screen out. */
+            grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
+
+            draw_sprite( buffer, blocks[grid[z][y][x]], px_x, px_y - (z * 4) );
          }
-
-         /* TODO: Optimize drawing off-screen out. */
-         grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
-
-         draw_sprite( buffer, blocks[grid[y][x]], px_x, px_y );
       }
    }
 }
@@ -155,13 +159,15 @@ int main() {
       view_y = 0,
       tile_x = 0,
       tile_y = 0,
+      tile_z = 0,
+      block_placed = 0,
       toolbox_selected = 1;
    BITMAP* blocks[BLOCK_MAX] = { NULL };
    BITMAP* buffer = NULL;
-   uint8_t grid[GRID_TILE_H][GRID_TILE_W];
+   uint8_t grid[GRID_TILE_D][GRID_TILE_H][GRID_TILE_W];
 
    memset( blocks, '\0', sizeof( blocks ) );
-   memset( grid, '\0', GRID_TILE_W * GRID_TILE_H );
+   memset( grid, '\0', GRID_TILE_W * GRID_TILE_H * GRID_TILE_D );
 
    /* === Setup === */
 
@@ -213,35 +219,46 @@ int main() {
       if( mouse_b & 0x01 ) {
          /* Left mouse button down. */
 
-         /* Check to see if the toolbox was clicked. */
-         /* TODO: Support dragging out of the toolbox. */
-         if(
-            BLOCK_PX_W > mouse_x &&
-            BLOCK_PX_H * (BLOCK_MAX - 1) > mouse_y
-         ) {
-            /* Click was inside the toolbox... but which block? */
-            for( i = 1 ; BLOCK_MAX > i ; i++ ) {
-               if( mouse_y < (i * BLOCK_PX_H) ) {
-                  toolbox_selected = i;
-                  break;
+         if( !block_placed ) {
+
+            /* Check to see if the toolbox was clicked. */
+            /* TODO: Support dragging out of the toolbox. */
+            if(
+               BLOCK_PX_W > mouse_x &&
+               BLOCK_PX_H * (BLOCK_MAX - 1) > mouse_y
+            ) {
+               /* Click was inside the toolbox... but which block? */
+               for( i = 1 ; BLOCK_MAX > i ; i++ ) {
+                  if( mouse_y < (i * BLOCK_PX_H) ) {
+                     toolbox_selected = i;
+                     break;
+                  }
                }
             }
-         }
 
-         /* Get isometric mouse coordinates. */
-         grid_from_screen_coords(
-            &tile_x, &tile_y, mouse_x, mouse_y, view_x, view_y );
+            /* Get isometric mouse coordinates. */
+            grid_from_screen_coords(
+               &tile_x, &tile_y, mouse_x, mouse_y, view_x, view_y );
 
-         if(
-            0 <= tile_x && GRID_TILE_W > tile_x &&
-            0 <= tile_y && GRID_TILE_H > tile_y
-         ) {
-            /* Click was inside the grid! */
-            grid[tile_y][tile_x] = toolbox_selected;
-         } else {
-            /* Handle viewport dragging if we're not clicking on anything else.
-             */
-            grid_drag( &view_x, &view_y, mouse_x, mouse_y );
+            if(
+               0 <= tile_x && GRID_TILE_W > tile_x &&
+               0 <= tile_y && GRID_TILE_H > tile_y
+            ) {
+               /* Click was inside the grid! */
+               tile_z = 0;
+               while(
+                  GRID_TILE_D > tile_z && 0 != grid[tile_z][tile_y][tile_x]
+               ) {
+                  tile_z++;
+               }
+               grid[tile_z][tile_y][tile_x] = toolbox_selected;
+               block_placed = 1;
+            } else {
+               /* Handle viewport dragging if we're not clicking on anything
+                * else.
+                */
+               grid_drag( &view_x, &view_y, mouse_x, mouse_y );
+            }
          }
       } else if( mouse_b & 0x02 ) {
          /* Right mouse button down. */
@@ -252,8 +269,16 @@ int main() {
             0 <= tile_x && GRID_TILE_W > tile_x &&
             0 <= tile_y && GRID_TILE_H > tile_y
          ) {
-            grid[tile_y][tile_x] = 0;
+            tile_z = GRID_TILE_D - 1;
+            while( 0 <= tile_z && 0 == grid[tile_z][tile_y][tile_x] ) {
+               /* Descend until we find the top-most block. */
+               tile_z--;
+            }
+            grid[tile_z][tile_y][tile_x] = 0;
          }
+      } else {
+         /* Stopped holding down mouse button. */
+         block_placed = 0;
       }
 
       /* Finish loop. */

@@ -4,6 +4,7 @@
 
 #define GRID_TILE_W 32
 #define GRID_TILE_H 32
+#define GRID_TILE_D 32
 
 /*! \brief Increment by which dragging modifies the viewport. */
 #define GRID_DRAG_VIEW_INC         5
