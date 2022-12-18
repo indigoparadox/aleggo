@@ -39,26 +39,69 @@ void draw_grid(
    BITMAP* buffer, int view_x, int view_y,
    uint8_t grid[GRID_TILE_H][GRID_TILE_W], BITMAP* blocks[BLOCK_MAX]
 ) {
-   int x = 0,
-      y = 0,
+   int x = -1,
+      y = 2,
+      x2 = -1,
+      y2 = GRID_TILE_H + 2,
       px_x = 0,
-      px_y = 0;
+      px_y = 0,
+      px_x2 = 0,
+      px_y2 = 0;
+
+   /* Draw left border. */
+   grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
+   grid_to_screen_coords( &px_x2, &px_y2, x2, y2, view_x, view_y );
+   line( buffer,
+      px_x - 8,
+      px_y,
+      px_x2 - 8,
+      px_y2,
+      makecol( 0, 0, 0 ) );
+
+   /* Draw top border. */
+   x2 = GRID_TILE_W - 1;
+   y2 = 2;
+   grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
+   grid_to_screen_coords( &px_x2, &px_y2, x2, y2, view_x, view_y );
+   line( buffer,
+      px_x - 8,
+      px_y,
+      px_x2 - 8,
+      px_y2,
+      makecol( 0, 0, 0 ) );
+
+   /* Draw right border. */
+   x = GRID_TILE_W - 1;
+   y = 2;
+   x2 = GRID_TILE_W - 1;
+   y2 = GRID_TILE_H + 2;
+   grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
+   grid_to_screen_coords( &px_x2, &px_y2, x2, y2, view_x, view_y );
+   line( buffer,
+      px_x - 8,
+      px_y,
+      px_x2 - 8,
+      px_y2,
+      makecol( 0, 0, 0 ) );
+
+   /* Draw bottom border. */
+   x = -1;
+   y = GRID_TILE_H + 2;
+   x2 = GRID_TILE_W - 1;
+   y2 = GRID_TILE_H + 2;
+   grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
+   grid_to_screen_coords( &px_x2, &px_y2, x2, y2, view_x, view_y );
+   line( buffer,
+      px_x - 8,
+      px_y,
+      px_x2 - 8,
+      px_y2,
+      makecol( 0, 0, 0 ) );
 
    for( y = 0 ; GRID_TILE_H > y ; y++ ) {
 
       /* Draw X coordinates backwards to fix overlapping. */
       for( x = GRID_TILE_W - 1 ; 0 <= x ; x-- ) {
-
-         grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
-
-         if( 0 == x ) {
-            line( buffer,
-               px_x,
-               px_y + ((BLOCK_PX_H / 4) * 3),
-               px_x + (BLOCK_PX_W / 2),
-               px_y + BLOCK_PX_H,
-               makecol( 0, 0, 0 ) );
-         }
 
          /* Skip empty blocks. */
          if( 0 >= blocks[grid[y][x]] ) {
@@ -66,6 +109,7 @@ void draw_grid(
          }
 
          /* TODO: Optimize drawing off-screen out. */
+         grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
 
          draw_sprite( buffer, blocks[grid[y][x]], px_x, px_y );
       }
@@ -150,7 +194,6 @@ int main() {
             0 <= tile_x && GRID_TILE_W > tile_x &&
             0 <= tile_y && GRID_TILE_H > tile_y
          ) {
-            printf( "tile clicked: %d, %d\n", tile_x, tile_y );
             grid[tile_y][tile_x] = BLOCK_1x1x1_BLUE;
          } else {
             /* Handle viewport dragging if we're not clicking on anything else.
