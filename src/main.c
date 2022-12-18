@@ -180,7 +180,11 @@ int main() {
    install_keyboard();
    install_timer();
 
+#ifdef DOS
+   if( set_gfx_mode( GFX_AUTODETECT, 320, 200, 0, 0 ) ) {
+#else
    if( set_gfx_mode( GFX_AUTODETECT_WINDOWED, 320, 240, 0, 0 ) ) {
+#endif
       error_printf( "could not setup graphics!\n" );
       retval = ERROR_ALLEGRO_GFX;
       goto cleanup;
