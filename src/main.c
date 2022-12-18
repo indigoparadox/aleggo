@@ -40,12 +40,25 @@ void draw_grid(
    uint8_t grid[GRID_TILE_H][GRID_TILE_W], BITMAP* blocks[BLOCK_MAX]
 ) {
    int x = 0,
-      y = 0;
+      y = 0,
+      px_x = 0,
+      px_y = 0;
 
    for( y = 0 ; GRID_TILE_H > y ; y++ ) {
 
       /* Draw X coordinates backwards to fix overlapping. */
       for( x = GRID_TILE_W - 1 ; 0 <= x ; x-- ) {
+
+         grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
+
+         if( 0 == x ) {
+            line( buffer,
+               px_x,
+               px_y + ((BLOCK_PX_H / 4) * 3),
+               px_x + (BLOCK_PX_W / 2),
+               px_y + BLOCK_PX_H,
+               makecol( 0, 0, 0 ) );
+         }
 
          /* Skip empty blocks. */
          if( 0 >= blocks[grid[y][x]] ) {
@@ -54,11 +67,7 @@ void draw_grid(
 
          /* TODO: Optimize drawing off-screen out. */
 
-         draw_sprite( buffer, blocks[grid[y][x]],
-            /* Isometric transform X. */
-            view_x + ((x * BLOCK_PX_W / 2) + (y * BLOCK_PX_W / 2)),
-            /* Isometric transform Y. */
-            view_y + ((y * BLOCK_PX_OFFSET / 2) - (x * BLOCK_PX_OFFSET / 2) ));
+         draw_sprite( buffer, blocks[grid[y][x]], px_x, px_y );
       }
    }
 }
@@ -134,7 +143,7 @@ int main() {
       blit( buffer, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H );
 
       if( mouse_b & 0x01 ) {
-         grid_trans_coords(
+         grid_from_screen_coords(
             &tile_x, &tile_y, mouse_x, mouse_y, view_x, view_y );
 
          if(

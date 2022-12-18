@@ -3,7 +3,7 @@
 
 #include "block.h"
 
-void grid_trans_coords(
+void grid_from_screen_coords(
    int* tile_x, int* tile_y, int mouse_c_x, int mouse_c_y,
    int view_x, int view_y
 ) {
@@ -11,6 +11,17 @@ void grid_trans_coords(
    mouse_c_y = (mouse_c_y - view_y) / (-1 * (BLOCK_PX_H / 4));
    *tile_x = ((mouse_c_x + mouse_c_y) / 2) + 1;
    *tile_y = ((mouse_c_x - mouse_c_y) / 2) - 1;
+}
+
+void grid_to_screen_coords(
+   int* screen_px_x, int* screen_px_y, int grid_px_x, int grid_px_y,
+   int view_x, int view_y
+) {
+   *screen_px_x =
+      view_x + ((grid_px_x * BLOCK_PX_W / 2) + (grid_px_y * BLOCK_PX_W / 2));
+   *screen_px_y = 
+      view_y + ((grid_px_y * BLOCK_PX_OFFSET / 2) -
+      (grid_px_x * BLOCK_PX_OFFSET / 2) );
 }
 
 void grid_drag( int* view_x, int* view_y, int mouse_c_x, int mouse_c_y ) {
