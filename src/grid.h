@@ -2,8 +2,8 @@
 #ifndef GRID_H
 #define GRID_H
 
-#define GRID_TILE_W 64
-#define GRID_TILE_H 64
+#define GRID_TILE_W 32
+#define GRID_TILE_H 32
 
 /*! \brief Increment by which dragging modifies the viewport. */
 #define GRID_DRAG_VIEW_INC         5
