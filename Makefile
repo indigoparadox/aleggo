@@ -9,22 +9,22 @@ CFLAGS_GCC :=
 
 SANITIZE := -Werror -Wall -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
 
-allego: CC_GCC := gcc
-allego: CFLAGS_GCC := $(shell pkg-config allegro --cflags) $(SANITIZE)
-allego: LDFLAGS_GCC := $(shell pkg-config allegro --libs) $(SANITIZE)
+aleggo: CC_GCC := gcc
+aleggo: CFLAGS_GCC := $(shell pkg-config allegro --cflags) $(SANITIZE)
+aleggo: LDFLAGS_GCC := $(shell pkg-config allegro --libs) $(SANITIZE)
 
-allegd.exe: CC_GCC := i586-pc-msdosdjgpp-gcc
-allegd.exe: CFLAGS_GCC += -DDOS -fgnu89-inline -I$(ALLEGRO_DJGPP_ROOT)/include
-allegd.exe: LDFLAGS_GCC += -L$(ALLEGRO_DJGPP_ROOT)/lib -lalleg
+aleggd.exe: CC_GCC := i586-pc-msdosdjgpp-gcc
+aleggd.exe: CFLAGS_GCC += -DDOS -fgnu89-inline -I$(ALLEGRO_DJGPP_ROOT)/include
+aleggd.exe: LDFLAGS_GCC += -L$(ALLEGRO_DJGPP_ROOT)/lib -lalleg
 
 .PHONY: clean
 
 all:
 
-allego: $(addprefix obj/$(shell uname -s)/,$(subst .c,.o,$(ALLEGO_C_FILES)))
+aleggo: $(addprefix obj/$(shell uname -s)/,$(subst .c,.o,$(ALLEGO_C_FILES)))
 	$(CC_GCC) -o $@ $^ $(LDFLAGS_GCC)
 
-allegd.exe: $(addprefix obj/dos/,$(subst .c,.o,$(ALLEGO_C_FILES)))
+aleggd.exe: $(addprefix obj/dos/,$(subst .c,.o,$(ALLEGO_C_FILES)))
 	#$(CC_GCC) -o $@ $^ $(LDFLAGS_GCC)
 	wcl386 -l=dos32a -fe=$@ -s -3s -k128k dos/clib3s.lib alleg.lib $^
 
@@ -38,5 +38,5 @@ obj/dos/%.o: %.c
 	wcc386 -DDOS -bt=dos32a -s -3s -fo=$@ $(<:%.c=%)
 
 clean:
-	rm -rf obj allego allegw32.exe *.err allegd.exe
+	rm -rf obj aleggo aleggw32.exe *.err aleggd.exe
 
