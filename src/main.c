@@ -11,7 +11,12 @@
 #define ERROR_ALLEGRO_MOUSE 4
 
 #define PATH_BLOCKS "blocks"
+
+#ifdef DOS
+#define PATH_SEP '\\'
+#else
 #define PATH_SEP '/'
+#endif
 
 #define error_printf( ... ) fprintf( stderr, __VA_ARGS__ )
 
@@ -52,8 +57,7 @@ void draw_toolbox(
 
 void draw_grid(
    BITMAP* buffer, int view_x, int view_y,
-   unsigned char grid[GRID_TILE_D][GRID_TILE_H][GRID_TILE_W],
-   BITMAP* blocks[BLOCK_MAX]
+   unsigned char* grid, BITMAP* blocks[BLOCK_MAX]
 ) {
    int x = -1,
       y = 2,
@@ -122,14 +126,15 @@ void draw_grid(
          for( x = GRID_TILE_W - 1 ; 0 <= x ; x-- ) {
 
             /* Skip empty blocks. */
-            if( 0 >= blocks[grid[z][y][x]] ) {
+            if( 0 == grid[grid_idx( z, y, x )] ) {
                continue;
             }
 
             /* TODO: Optimize drawing off-screen out. */
             grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
 
-            draw_sprite( buffer, blocks[grid[z][y][x]], px_x, px_y - (z * 4) );
+            draw_sprite( buffer, blocks[grid[grid_idx( z, y, x )]],
+               px_x, px_y - (z * 4) );
          }
       }
    }
@@ -157,55 +162,87 @@ int main() {
       tile_z = 0,
       block_placed = 0,
       toolbox_selected = 1;
-   BITMAP* blocks[BLOCK_MAX] = { NULL };
+   BITMAP** blocks = NULL;
    BITMAP* buffer = NULL;
-   unsigned char grid[GRID_TILE_D][GRID_TILE_H][GRID_TILE_W];
+   unsigned char* grid = NULL;
 
-   memset( blocks, '\0', sizeof( blocks ) );
-   memset( grid, '\0', GRID_TILE_W * GRID_TILE_H * GRID_TILE_D );
+   grid = calloc( GRID_TILE_D * GRID_TILE_H * GRID_TILE_W, 1 );
+   blocks = calloc( sizeof( BITMAP* ), BLOCK_MAX );
 
    /* === Setup === */
 
    if( allegro_init() ) {
-      error_printf( "could not setup allegro!\n" );
+      allegro_message( "could not setup allegro!" );
       retval = ERROR_ALLEGRO;
       goto cleanup;
    }
 
    install_keyboard();
+#if 0
+   /* XXX: Broken in DOS. */
    install_timer();
+#endif
 
 #ifdef DOS
    if( set_gfx_mode( GFX_AUTODETECT, 320, 200, 0, 0 ) ) {
 #else
    if( set_gfx_mode( GFX_AUTODETECT_WINDOWED, 320, 240, 0, 0 ) ) {
 #endif
-      error_printf( "could not setup graphics!\n" );
+      allegro_message( "could not setup graphics!" );
       retval = ERROR_ALLEGRO_GFX;
       goto cleanup;
    }
 
+#if 0
+   /* XXX: Broken in DOS. */
    if( 0 > install_mouse() ) {
-      error_printf( "could not setup mouse!\n" );
+      allegro_message( "could not setup mouse!" );
       retval = ERROR_ALLEGRO_MOUSE;
       goto cleanup;
    }
+#endif
+
+#if 0
+   text_mode( makecol( 0, 0, 255 ) );
+   textout_centre( screen, font, "Hey", 100, 100, makecol( 255, 255, 0 ) );
+   while( !keypressed() ) {}
+   goto cleanup;
+#endif
 
    buffer = create_bitmap( SCREEN_W, SCREEN_H );
+   if( NULL == buffer ) {
+      allegro_message( "unable to allocate screen buffer!" );
+      goto cleanup;
+   }
 
    /* === Load Assets === */
+
    blocks[BLOCK_1x1x1_RED] = load_block_bitmap( "b1x1x1r.bmp" );
+   if( NULL == blocks[BLOCK_1x1x1_RED] ) {
+      allegro_message( "unable to load b1x1x1r.bmp" );
+      goto cleanup;
+   }
    blocks[BLOCK_1x1x1_GREEN] = load_block_bitmap( "b1x1x1g.bmp" );
+   if( NULL == blocks[BLOCK_1x1x1_RED] ) {
+      allegro_message( "unable to load b1x1x1g.bmp" );
+      goto cleanup;
+   }
    blocks[BLOCK_1x1x1_BLUE] = load_block_bitmap( "b1x1x1b.bmp" );
+   if( NULL == blocks[BLOCK_1x1x1_RED] ) {
+      allegro_message( "unable to load b1x1x1b.bmp" );
+      goto cleanup;
+   }
 
    /* === Main Loop === */
 
    do {
       /* Start loop. */
+#if 0
+      /* XXX: Broken in DOS. */
       poll_mouse();
       show_mouse( NULL ); /* Disable mouse before drawing. */
+#endif
       acquire_screen();
-
       clear_to_color( buffer, makecol( 128, 128, 128 ) );
 
       draw_grid( buffer, view_x, view_y, grid, blocks );
@@ -215,6 +252,8 @@ int main() {
 
       blit( buffer, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H );
 
+#if 0
+      /* XXX: Broken in DOS. */
       if( mouse_b & 0x01 ) {
          /* Left mouse button down. */
 
@@ -246,11 +285,12 @@ int main() {
                /* Click was inside the grid! */
                tile_z = 0;
                while(
-                  GRID_TILE_D > tile_z && 0 != grid[tile_z][tile_y][tile_x]
+                  GRID_TILE_D > tile_z &&
+                  0 != grid[grid_idx( tile_z, tile_y, tile_x )]
                ) {
                   tile_z++;
                }
-               grid[tile_z][tile_y][tile_x] = toolbox_selected;
+               grid[grid_idx( tile_z, tile_y, tile_x )] = toolbox_selected;
                block_placed = 1;
             } else {
                /* Handle viewport dragging if we're not clicking on anything
@@ -269,30 +309,40 @@ int main() {
             0 <= tile_y && GRID_TILE_H > tile_y
          ) {
             tile_z = GRID_TILE_D - 1;
-            while( 0 <= tile_z && 0 == grid[tile_z][tile_y][tile_x] ) {
+            while(
+               0 <= tile_z &&
+               0 == grid[grid_idx( tile_z, tile_y, tile_x )]
+            ) {
                /* Descend until we find the top-most block. */
                tile_z--;
             }
-            grid[tile_z][tile_y][tile_x] = 0;
+            grid[grid_idx( tile_z, tile_y, tile_x )] = 0;
          }
       } else {
          /* Stopped holding down mouse button. */
          block_placed = 0;
       }
+#endif
 
       /* Finish loop. */
       if( keypressed() ) {
          running = 0;
       }
       release_screen();
+#if 0
+      /* XXX: Broken in DOS. */
       show_mouse( screen ); /* Enable mouse after drawing. */
-      vsync();
+#endif
+      /* vsync(); */
 
    } while( running );
 
+#if 0
    save_screenshot( buffer, "out.bmp" );
+#endif
 
 cleanup:
+
    if( ERROR_ALLEGRO != retval ) {
       clear_keybuf();
    }

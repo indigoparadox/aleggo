@@ -6,6 +6,8 @@
 #define GRID_TILE_H 32
 #define GRID_TILE_D 32
 
+#define grid_idx( z, y, x ) ((z * (GRID_TILE_W * GRID_TILE_H)) + (y * GRID_TILE_H) + x)
+
 /*! \brief Increment by which dragging modifies the viewport. */
 #define GRID_DRAG_VIEW_INC         5
 
