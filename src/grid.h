@@ -28,5 +28,13 @@ void grid_to_screen_coords(
  */
 void grid_drag( int* view_x, int* view_y, int mouse_c_x, int mouse_c_y );
 
+int grid_place(
+   unsigned char block_idx, int tile_x, int tile_y,
+   unsigned char* grid, int grid_tw, int grid_th, int grid_td );
+
+int grid_remove(
+   int tile_x, int tile_y,
+   unsigned char* grid, int grid_tw, int grid_th, int grid_td );
+
 #endif /* !GRID_H */
 

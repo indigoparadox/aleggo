@@ -1,4 +1,4 @@
-# Allego
+# Aleggo
 
 ![Rough screenshot of an early version.](screenshot.png)
 
