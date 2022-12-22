@@ -157,10 +157,11 @@ int main() {
       i = 0,
       view_x = 0,
       view_y = 0,
+#ifdef MOUSE
       tile_x = 0,
       tile_y = 0,
-      tile_z = 0,
       block_placed = 0,
+#endif /* MOUSE */
       toolbox_selected = 1;
    BITMAP** blocks = NULL;
    BITMAP* buffer = NULL;
@@ -178,7 +179,7 @@ int main() {
    }
 
    install_keyboard();
-#if 0
+#ifdef MOUSE
    /* XXX: Broken in DOS. */
    install_timer();
 #endif
@@ -193,14 +194,14 @@ int main() {
       goto cleanup;
    }
 
-#if 0
+#ifdef MOUSE
    /* XXX: Broken in DOS. */
    if( 0 > install_mouse() ) {
       allegro_message( "could not setup mouse!" );
       retval = ERROR_ALLEGRO_MOUSE;
       goto cleanup;
    }
-#endif
+#endif /* MOUSE */
 
 #if 0
    text_mode( makecol( 0, 0, 255 ) );
@@ -237,22 +238,12 @@ int main() {
 
    do {
       /* Start loop. */
-#if 0
+#ifdef MOUSE
       /* XXX: Broken in DOS. */
       poll_mouse();
-      show_mouse( NULL ); /* Disable mouse before drawing. */
 #endif
-      acquire_screen();
-      clear_to_color( buffer, makecol( 128, 128, 128 ) );
 
-      draw_grid( buffer, view_x, view_y, grid, blocks );
-
-      /* Draw toolbox on top of grid. */
-      draw_toolbox( buffer, toolbox_selected, blocks );
-
-      blit( buffer, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H );
-
-#if 0
+#ifdef MOUSE
       /* XXX: Broken in DOS. */
       if( mouse_b & 0x01 ) {
          /* Left mouse button down. */
@@ -278,19 +269,11 @@ int main() {
             grid_from_screen_coords(
                &tile_x, &tile_y, mouse_x, mouse_y, view_x, view_y );
 
-            if(
-               0 <= tile_x && GRID_TILE_W > tile_x &&
-               0 <= tile_y && GRID_TILE_H > tile_y
-            ) {
-               /* Click was inside the grid! */
-               tile_z = 0;
-               while(
-                  GRID_TILE_D > tile_z &&
-                  0 != grid[grid_idx( tile_z, tile_y, tile_x )]
-               ) {
-                  tile_z++;
-               }
-               grid[grid_idx( tile_z, tile_y, tile_x )] = toolbox_selected;
+            if( 0 <= grid_place(
+               toolbox_selected, tile_x, tile_y, grid,
+               GRID_TILE_W, GRID_TILE_H, GRID_TILE_D
+            ) ) {
+               /* Block was placed. */
                block_placed = 1;
             } else {
                /* Handle viewport dragging if we're not clicking on anything
@@ -302,38 +285,49 @@ int main() {
       } else if( mouse_b & 0x02 ) {
          /* Right mouse button down. */
 
-         grid_from_screen_coords(
-            &tile_x, &tile_y, mouse_x, mouse_y, view_x, view_y );
-         if(
-            0 <= tile_x && GRID_TILE_W > tile_x &&
-            0 <= tile_y && GRID_TILE_H > tile_y
-         ) {
-            tile_z = GRID_TILE_D - 1;
-            while(
-               0 <= tile_z &&
-               0 == grid[grid_idx( tile_z, tile_y, tile_x )]
-            ) {
-               /* Descend until we find the top-most block. */
-               tile_z--;
+         if( !block_placed ) {
+            grid_from_screen_coords(
+               &tile_x, &tile_y, mouse_x, mouse_y, view_x, view_y );
+            if( 0 <=  grid_remove( 
+               tile_x, tile_y, grid, GRID_TILE_W, GRID_TILE_H, GRID_TILE_D
+            ) ) {
+               /* Block was removed. */
+               block_placed = -1;
             }
-            grid[grid_idx( tile_z, tile_y, tile_x )] = 0;
          }
       } else {
          /* Stopped holding down mouse button. */
          block_placed = 0;
       }
-#endif
+#endif /* MOUSE */
 
       /* Finish loop. */
       if( keypressed() ) {
          running = 0;
       }
+
+      /*  === Drawing === */
+
+#ifdef MOUSE
+      /* XXX: Broken in DOS. */
+      show_mouse( NULL ); /* Disable mouse before drawing. */
+#endif
+      acquire_screen();
+      clear_to_color( buffer, makecol( 128, 128, 128 ) );
+
+      draw_grid( buffer, view_x, view_y, grid, blocks );
+
+      /* Draw toolbox on top of grid. */
+      draw_toolbox( buffer, toolbox_selected, blocks );
+
+      blit( buffer, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H );
+
       release_screen();
-#if 0
+#ifdef MOUSE
       /* XXX: Broken in DOS. */
       show_mouse( screen ); /* Enable mouse after drawing. */
-#endif
-      /* vsync(); */
+#endif /* MOUSE */
+      vsync();
 
    } while( running );
 
@@ -347,10 +341,17 @@ cleanup:
       clear_keybuf();
    }
 
-   for( i = 0 ; BLOCK_MAX > i ; i++ ) {
-      if( NULL != blocks[i] ) {
-         destroy_bitmap( blocks[i] );
+   if( NULL != grid ) {
+      free( grid );
+   }
+
+   if( NULL != blocks ) {
+      for( i = 0 ; BLOCK_MAX > i ; i++ ) {
+         if( NULL != blocks[i] ) {
+            destroy_bitmap( blocks[i] );
+         }
       }
+      free( blocks );
    }
 
    if( NULL != buffer ) {

@@ -10,7 +10,7 @@ CFLAGS_GCC :=
 SANITIZE := -Werror -Wall -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
 
 aleggo: CC_GCC := gcc
-aleggo: CFLAGS_GCC := $(shell pkg-config allegro --cflags) $(SANITIZE)
+aleggo: CFLAGS_GCC := $(shell pkg-config allegro --cflags) $(SANITIZE) -DMOUSE
 aleggo: LDFLAGS_GCC := $(shell pkg-config allegro --libs) $(SANITIZE)
 
 aleggd.exe: CC_GCC := i586-pc-msdosdjgpp-gcc
