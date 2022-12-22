@@ -324,6 +324,18 @@ int main() {
             grid_drag( &view_x, &view_y, key_x, --key_y );
             break;
 
+         case KEY_1:
+            toolbox_selected = 1;
+            break;
+
+         case KEY_2:
+            toolbox_selected = 2;
+            break;
+
+         case KEY_3:
+            toolbox_selected = 3;
+            break;
+
          case KEY_SPACE:
             grid_from_screen_coords(
                &tile_x, &tile_y, SCREEN_W / 2, SCREEN_H / 2, view_x, view_y );
