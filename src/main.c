@@ -157,9 +157,12 @@ int main() {
       i = 0,
       view_x = 0,
       view_y = 0,
-#ifdef MOUSE
+      key_val = 0,
+      key_x = 0,
+      key_y = 0,
       tile_x = 0,
       tile_y = 0,
+#ifdef MOUSE
       block_placed = 0,
 #endif /* MOUSE */
       toolbox_selected = 1;
@@ -303,7 +306,36 @@ int main() {
 
       /* Finish loop. */
       if( keypressed() ) {
-         running = 0;
+         key_val = readkey();
+         switch( (key_val >> 8) ) {
+         case KEY_RIGHT:
+            grid_drag( &view_x, &view_y, --key_x, key_y );
+            break;
+
+         case KEY_LEFT:
+            grid_drag( &view_x, &view_y, ++key_x, key_y );
+            break;
+
+         case KEY_UP:
+            grid_drag( &view_x, &view_y, key_x, ++key_y );
+            break;
+
+         case KEY_DOWN:
+            grid_drag( &view_x, &view_y, key_x, --key_y );
+            break;
+
+         case KEY_SPACE:
+            grid_from_screen_coords(
+               &tile_x, &tile_y, SCREEN_W / 2, SCREEN_H / 2, view_x, view_y );
+            grid_place(
+               toolbox_selected, tile_x, tile_y, grid,
+               GRID_TILE_W, GRID_TILE_H, GRID_TILE_D );
+            break;
+
+         case KEY_Q:
+            running = 0;
+            break;
+         }
       }
 
       /*  === Drawing === */
