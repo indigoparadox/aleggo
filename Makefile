@@ -25,7 +25,8 @@ allego: $(addprefix obj/$(shell uname -s)/,$(subst .c,.o,$(ALLEGO_C_FILES)))
 	$(CC_GCC) -o $@ $^ $(LDFLAGS_GCC)
 
 allegd.exe: $(addprefix obj/dos/,$(subst .c,.o,$(ALLEGO_C_FILES)))
-	$(CC_GCC) -o $@ $^ $(LDFLAGS_GCC)
+	#$(CC_GCC) -o $@ $^ $(LDFLAGS_GCC)
+	wcl386 -l=dos32a -fe=$@ -s -3s -k128k dos/clib3s.lib alleg.lib $^
 
 obj/$(shell uname -s)/%.o: %.c
 	$(MD) $(dir $@)
@@ -33,7 +34,8 @@ obj/$(shell uname -s)/%.o: %.c
 
 obj/dos/%.o: %.c
 	$(MD) $(dir $@)
-	$(CC_GCC) $(CFLAGS_GCC) -c -o $@ $<
+	#$(CC_GCC) $(CFLAGS_GCC) -c -o $@ $<
+	wcc386 -DDOS -bt=dos32a -s -3s -fo=$@ $(<:%.c=%)
 
 clean:
 	rm -rf obj allego allegw32.exe *.err allegd.exe
