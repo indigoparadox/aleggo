@@ -1,7 +1,7 @@
 
 #include "grid.h"
 
-#include "block.h"
+#include "blocks.h"
 
 void grid_from_screen_coords(
    int* tile_x, int* tile_y, int mouse_c_x, int mouse_c_y,
