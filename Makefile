@@ -10,7 +10,7 @@ CFLAGS_GCC :=
 SANITIZE := -Werror -Wall -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
 
 aleggo: CC_GCC := gcc
-aleggo: CFLAGS_GCC := $(shell pkg-config allegro --cflags) $(SANITIZE) -DMOUSE
+aleggo: CFLAGS_GCC := -DRETROFLAT_ALLEGRO -DRETROFLAT_OS_UNIX -DDEBUG -Imaug/src $(shell pkg-config allegro --cflags) $(SANITIZE) -DRETROFLAT_MOUSE
 aleggo: LDFLAGS_GCC := $(shell pkg-config allegro --libs) $(SANITIZE)
 
 aleggd.exe: CC_GCC := i586-pc-msdosdjgpp-gcc
@@ -35,7 +35,7 @@ obj/$(shell uname -s)/%.o: %.c
 obj/dos/%.o: %.c
 	$(MD) $(dir $@)
 	#$(CC_GCC) $(CFLAGS_GCC) -c -o $@ $<
-	wcc386 -DDOS -bt=dos32a -s -3s -fo=$@ $(<:%.c=%)
+	wcc386 -DDOS -bt=dos32a -i=maug/src -s -3s -fo=$@ $(<:%.c=%)
 
 clean:
 	rm -rf obj aleggo aleggw32.exe *.err aleggd.exe
