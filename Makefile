@@ -30,6 +30,11 @@ aleggw.exe: DEFINES := -DRETROFLAT_OS_WIN -DRETROFLAT_API_WIN16 -DRETROFLAT_MOUS
 aleggw.exe: CFLAGS_WATCOM += $(DEFINES) -bt=windows -imaug/src -i$(WATCOM)/h/win
 aleggw.exe: LDFLAGS_WATCOM += -l=win386
 
+ifneq ("$(RELEASE)","RELEASE")
+	CFLAGS_WATCOM += 
+	CFLAGS_GCC += -DDEBUG
+endif
+
 .PHONY: clean
 
 all:
