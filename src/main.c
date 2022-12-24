@@ -1,12 +1,17 @@
 
-#include <stdio.h>
-
 #define RETROFLT_C
 #include <retroflt.h>
 
 #define BLOCKS_C
 #include "blocks.h"
 #include "grid.h"
+
+struct ALEGGO_DATA {
+   struct RETROFLAT_BITMAP* blocks;
+   unsigned char* grid;
+   int view_x;
+   int view_y;
+};
 
 void draw_toolbox(
    int toolbox_selected, struct RETROFLAT_BITMAP blocks[BLOCK_MAX]
@@ -25,7 +30,9 @@ void draw_toolbox(
          NULL, bg, 0, (i - 1) * BLOCK_PX_H, BLOCK_PX_W, i * BLOCK_PX_H,
          RETROFLAT_FLAGS_FILL );
    
-      retroflat_blit_bitmap( NULL, &(blocks[i]), 0, (i - 1) * BLOCK_PX_H );
+      retroflat_blit_bitmap(
+         NULL, &(blocks[i]),
+         0, 0, 0, (i - 1) * BLOCK_PX_H, BLOCK_PX_W, BLOCK_PX_H );
    }
 }
 
@@ -107,8 +114,9 @@ void draw_grid(
             /* TODO: Optimize drawing off-screen out. */
             grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
 
-            retroflat_blit_bitmap( NULL,
-               &(blocks[grid[grid_idx( z, y, x )]]), px_x, px_y - (z * 4) );
+            retroflat_blit_bitmap(
+               NULL, &(blocks[grid[grid_idx( z, y, x )]]),
+               0, 0, px_x, px_y - (z * 4), BLOCK_PX_W, BLOCK_PX_H );
          }
       }
    }
@@ -120,192 +128,206 @@ void save_screenshot( BITMAP* buffer, const char* filename ) {
    PALETTE pal;
 
    get_palette( pal );
-   bmp_ss = create_sub_bitmap( buffer, 0, 0, SCREEN_W, SCREEN_H );
+   bmp_ss = create_sub_bitmap( buffer, 0, 0, retroflat_screen_w(), retroflat_screen_h() );
    save_bitmap( filename, bmp_ss, pal );
 
    destroy_bitmap( bmp_ss );
 }
 #endif
 
-int main() {
-   unsigned char running = 1;
-   int retval = 0,
-      i = 0,
-      view_x = 0,
-      view_y = 0,
-      input = 0,
-      key_x = 0,
-      key_y = 0,
-      tile_x = 0,
-      tile_y = 0,
+void aleggo_loop( struct ALEGGO_DATA* data ) {
+   static int toolbox_selected = 1;
+   static int key_x = 0;
+   static int key_y = 0;
 #ifdef RETROFLAT_MOUSE
-      block_placed = 0,
+   static int block_placed = 0;
 #endif /* RETROFLAT_MOUSE */
-      toolbox_selected = 1;
-   struct RETROFLAT_BITMAP* blocks = NULL;
+   int i = 0,
+      input = 0,
+      tile_x = 0,
+      tile_y = 0;
    struct RETROFLAT_INPUT input_evt;
-   unsigned char* grid = NULL;
 
-   grid = calloc( GRID_TILE_D * GRID_TILE_H * GRID_TILE_W, 1 );
-   blocks = calloc( sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
+   /* Start loop. */
+   input = retroflat_poll_input( &input_evt );
+
+   switch( input ) {
+#ifdef RETROFLAT_MOUSE
+   case RETROFLAT_MOUSE_B_LEFT:
+      /* Left mouse button down. */
+      if( !block_placed ) {
+         /* Check to see if the toolbox was clicked. */
+         /* TODO: Support dragging out of the toolbox. */
+         if(
+            BLOCK_PX_W > input_evt.mouse_x &&
+            BLOCK_PX_H * (BLOCK_MAX - 1) > input_evt.mouse_y
+         ) {
+            /* Click was inside the toolbox... but which block? */
+            for( i = 1 ; BLOCK_MAX > i ; i++ ) {
+               if( input_evt.mouse_y < (i * BLOCK_PX_H) ) {
+                  toolbox_selected = i;
+                  break;
+               }
+            }
+         }
+
+         /* Get isometric mouse coordinates. */
+         grid_from_screen_coords(
+            &tile_x, &tile_y,
+            input_evt.mouse_x, input_evt.mouse_y, data->view_x, data->view_y );
+
+         if( 0 <= grid_place(
+            toolbox_selected, tile_x, tile_y, data->grid,
+            GRID_TILE_W, GRID_TILE_H, GRID_TILE_D
+         ) ) {
+            /* Block was placed. */
+            block_placed = 1;
+         } else {
+            /* Handle viewport dragging if we're not clicking on anything
+               * else.
+               */
+            grid_drag( &(data->view_x), &(data->view_y),
+            input_evt.mouse_x, input_evt.mouse_y );
+         }
+      }
+      break;
+
+   case RETROFLAT_MOUSE_B_RIGHT:
+      /* Right mouse button down. */
+
+      if( !block_placed ) {
+         grid_from_screen_coords(
+            &tile_x, &tile_y,
+            input_evt.mouse_x, input_evt.mouse_y, data->view_x, data->view_y );
+         if( 0 <=  grid_remove( 
+            tile_x, tile_y, data->grid, GRID_TILE_W, GRID_TILE_H, GRID_TILE_D
+         ) ) {
+            /* Block was removed. */
+            block_placed = -1;
+         }
+      }
+      break;
+#endif /* RETROFLAT_MOUSE */
+
+   case RETROFLAT_KEY_RIGHT:
+      grid_drag( &(data->view_x), &(data->view_y), --key_x, key_y );
+      break;
+
+   case RETROFLAT_KEY_LEFT:
+      grid_drag( &(data->view_x), &(data->view_y), ++key_x, key_y );
+      break;
+
+   case RETROFLAT_KEY_UP:
+      grid_drag( &(data->view_x), &(data->view_y), key_x, ++key_y );
+      break;
+
+   case RETROFLAT_KEY_DOWN:
+      grid_drag( &(data->view_x), &(data->view_y), key_x, --key_y );
+      break;
+
+   case RETROFLAT_KEY_1:
+      toolbox_selected = 1;
+      break;
+
+   case RETROFLAT_KEY_2:
+      toolbox_selected = 2;
+      break;
+
+   case RETROFLAT_KEY_3:
+      toolbox_selected = 3;
+      break;
+
+   case RETROFLAT_KEY_SPACE:
+      grid_from_screen_coords(
+         &tile_x, &tile_y, 
+         retroflat_screen_w() / 2, retroflat_screen_h() / 2,
+         data->view_x, data->view_y );
+      grid_place(
+         toolbox_selected, tile_x, tile_y, data->grid,
+         GRID_TILE_W, GRID_TILE_H, GRID_TILE_D );
+      break;
+
+   case RETROFLAT_KEY_Q:
+      retroflat_quit( 0 );
+      break;
+
+   default:
+#ifdef RETROFLAT_MOUSE
+      /* Stopped holding down mouse button. */
+      block_placed = 0;
+#endif /* RETROFLAT_MOUSE */
+      break;
+   }
+
+   /*  === Drawing === */
+
+   retroflat_draw_lock();
+
+   retroflat_rect(
+      NULL, RETROFLAT_COLOR_GRAY, 0, 0,
+      retroflat_screen_w(), retroflat_screen_h(),
+      RETROFLAT_FLAGS_FILL );
+
+   draw_grid( data->view_x, data->view_y, data->grid, data->blocks );
+
+   /* Draw toolbox on top of grid. */
+   draw_toolbox( toolbox_selected, data->blocks );
+
+   retroflat_draw_flip();
+}
+
+int main() {
+   int retval = 0,
+      i = 0;
+   struct ALEGGO_DATA data;
+
+   memset( &data, '\0', sizeof( struct ALEGGO_DATA ) );
+   data.grid = calloc( GRID_TILE_D * GRID_TILE_H * GRID_TILE_W, 1 );
+   data.blocks = calloc( sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
 
    retroflat_set_assets_path( "blocks" );
 
    /* === Setup === */
-   retroflat_init( 320, 200 );
+   retval = retroflat_init( "Aleggo", 320, 200 );
+   if( RETROFLAT_OK != retval ) {
+      retroflat_message( "Aleggo Error", "Could not initialize." );
+      goto cleanup;
+   }
 
    /* === Load Assets === */
 
    for( i = 1 ; BLOCK_MAX > i ; i++ ) {
-      retval = retroflat_load_bitmap( gc_block_filenames[i], &(blocks[i]) );
+      retval = retroflat_load_bitmap(
+         gc_block_filenames[i], &(data.blocks[i]) );
       if( RETROFLAT_OK != retval ) {
+         retroflat_message(
+            "Aleggo Error", "Could not load bitmap: %s", gc_block_filenames[i]
+         );
          goto cleanup;
       }
    }
 
    /* === Main Loop === */
 
-   do {
-      /* Start loop. */
-      input = retroflat_poll_input( &input_evt );
+   retroflat_loop( aleggo_loop, &data );
 
-      switch( input ) {
-      case RETROFLAT_MOUSE_B_LEFT:
-         /* Left mouse button down. */
-         if( !block_placed ) {
-            /* Check to see if the toolbox was clicked. */
-            /* TODO: Support dragging out of the toolbox. */
-            if(
-               BLOCK_PX_W > input_evt.mouse_x &&
-               BLOCK_PX_H * (BLOCK_MAX - 1) > input_evt.mouse_y
-            ) {
-               /* Click was inside the toolbox... but which block? */
-               for( i = 1 ; BLOCK_MAX > i ; i++ ) {
-                  if( mouse_y < (i * BLOCK_PX_H) ) {
-                     toolbox_selected = i;
-                     break;
-                  }
-               }
-            }
-
-            /* Get isometric mouse coordinates. */
-            grid_from_screen_coords(
-               &tile_x, &tile_y,
-               input_evt.mouse_x, input_evt.mouse_y, view_x, view_y );
-
-            if( 0 <= grid_place(
-               toolbox_selected, tile_x, tile_y, grid,
-               GRID_TILE_W, GRID_TILE_H, GRID_TILE_D
-            ) ) {
-               /* Block was placed. */
-               block_placed = 1;
-            } else {
-               /* Handle viewport dragging if we're not clicking on anything
-                * else.
-                */
-               grid_drag( &view_x, &view_y,
-               input_evt.mouse_x, input_evt.mouse_y );
-            }
-         }
-         break;
-
-      case RETROFLAT_MOUSE_B_RIGHT:
-         /* Right mouse button down. */
-
-         if( !block_placed ) {
-            grid_from_screen_coords(
-               &tile_x, &tile_y,
-               input_evt.mouse_x, input_evt.mouse_y, view_x, view_y );
-            if( 0 <=  grid_remove( 
-               tile_x, tile_y, grid, GRID_TILE_W, GRID_TILE_H, GRID_TILE_D
-            ) ) {
-               /* Block was removed. */
-               block_placed = -1;
-            }
-         }
-         break;
-
-      case KEY_RIGHT:
-         grid_drag( &view_x, &view_y, --key_x, key_y );
-         break;
-
-      case KEY_LEFT:
-         grid_drag( &view_x, &view_y, ++key_x, key_y );
-         break;
-
-      case KEY_UP:
-         grid_drag( &view_x, &view_y, key_x, ++key_y );
-         break;
-
-      case KEY_DOWN:
-         grid_drag( &view_x, &view_y, key_x, --key_y );
-         break;
-
-      case KEY_1:
-         toolbox_selected = 1;
-         break;
-
-      case KEY_2:
-         toolbox_selected = 2;
-         break;
-
-      case KEY_3:
-         toolbox_selected = 3;
-         break;
-
-      case KEY_SPACE:
-         grid_from_screen_coords(
-            &tile_x, &tile_y, SCREEN_W / 2, SCREEN_H / 2, view_x, view_y );
-         grid_place(
-            toolbox_selected, tile_x, tile_y, grid,
-            GRID_TILE_W, GRID_TILE_H, GRID_TILE_D );
-         break;
-
-      case KEY_Q:
-         running = 0;
-         break;
-
-
-      default:
-         /* Stopped holding down mouse button. */
-         block_placed = 0;
-         break;
-      }
-
-      /*  === Drawing === */
-
-      retroflat_draw_lock();
-
-      retroflat_rect(
-         NULL, RETROFLAT_COLOR_GRAY, 0, 0, SCREEN_W, SCREEN_H,
-         RETROFLAT_FLAGS_FILL );
-
-      draw_grid( view_x, view_y, grid, blocks );
-
-      /* Draw toolbox on top of grid. */
-      draw_toolbox( toolbox_selected, blocks );
-
-      retroflat_draw_flip();
-
-   } while( running );
-
-#if 0
+ #if 0
    save_screenshot( buffer, "out.bmp" );
 #endif
 
 cleanup:
 
-   if( NULL != grid ) {
-      free( grid );
+   if( NULL != data.grid ) {
+      free( data.grid );
    }
 
-   if( NULL != blocks ) {
+   if( NULL != data.blocks ) {
       for( i = 0 ; BLOCK_MAX > i ; i++ ) {
-         if( retroflat_bitmap_ok( &(blocks[i]) ) ) {
-            retroflat_destroy_bitmap( &(blocks[i]) );
+         if( retroflat_bitmap_ok( &(data.blocks[i]) ) ) {
+            retroflat_destroy_bitmap( &(data.blocks[i]) );
          }
       }
-      free( blocks );
+      free( data.blocks );
    }
 
    retroflat_shutdown( retval );
