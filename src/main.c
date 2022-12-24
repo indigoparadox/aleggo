@@ -261,8 +261,9 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
 
    /*  === Drawing === */
 
-   retroflat_draw_lock();
+   retroflat_draw_lock( NULL );
 
+   /* Clear screen to gray. */
    retroflat_rect(
       NULL, RETROFLAT_COLOR_GRAY, 0, 0,
       retroflat_screen_w(), retroflat_screen_h(),
@@ -273,7 +274,7 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
    /* Draw toolbox on top of grid. */
    draw_toolbox( toolbox_selected, data->blocks );
 
-   retroflat_draw_flip();
+   retroflat_draw_release( NULL );
 }
 
 int main() {
