@@ -277,7 +277,7 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
    retroflat_draw_release( NULL );
 }
 
-int main() {
+int main( int argc, char** argv ) {
    int retval = 0,
       i = 0;
    struct ALEGGO_DATA data;
