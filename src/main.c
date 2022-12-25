@@ -280,16 +280,16 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
 int main( int argc, char** argv ) {
    int retval = 0,
       i = 0;
-   struct ALEGGO_DATA data;
+   struct ALEGGO_DATA* data = NULL;
 
-   memset( &data, '\0', sizeof( struct ALEGGO_DATA ) );
-   data.grid = calloc( GRID_TILE_D * GRID_TILE_H * GRID_TILE_W, 1 );
-   data.blocks = calloc( sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
+   data = calloc( sizeof( struct ALEGGO_DATA ), 1 );
+   data->grid = calloc( GRID_TILE_D * GRID_TILE_H * GRID_TILE_W, 1 );
+   data->blocks = calloc( sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
 
    retroflat_set_assets_path( "blocks" );
 
    /* === Setup === */
-   retval = retroflat_init( "Aleggo", 320, 200 );
+   retval = retroflat_init( "Aleggo", 320, 200, argc, argv );
    if( RETROFLAT_OK != retval ) {
       retroflat_message( "Aleggo Error", "Could not initialize." );
       goto cleanup;
@@ -299,7 +299,7 @@ int main( int argc, char** argv ) {
 
    for( i = 1 ; BLOCK_MAX > i ; i++ ) {
       retval = retroflat_load_bitmap(
-         gc_block_filenames[i], &(data.blocks[i]) );
+         gc_block_filenames[i], &(data->blocks[i]) );
       if( RETROFLAT_OK != retval ) {
          retroflat_message(
             "Aleggo Error", "Could not load bitmap: %s", gc_block_filenames[i]
@@ -308,9 +308,10 @@ int main( int argc, char** argv ) {
       }
    }
 
+
    /* === Main Loop === */
 
-   retroflat_loop( aleggo_loop, &data );
+   retroflat_loop( (retroflat_loop_iter)aleggo_loop, data );
 
  #if 0
    save_screenshot( buffer, "out.bmp" );
@@ -318,22 +319,26 @@ int main( int argc, char** argv ) {
 
 cleanup:
 
-   if( NULL != data.grid ) {
-      free( data.grid );
+   if( NULL != data->grid ) {
+      free( data->grid );
    }
 
-   if( NULL != data.blocks ) {
+   if( NULL != data->blocks ) {
       for( i = 0 ; BLOCK_MAX > i ; i++ ) {
-         if( retroflat_bitmap_ok( &(data.blocks[i]) ) ) {
-            retroflat_destroy_bitmap( &(data.blocks[i]) );
+         if( retroflat_bitmap_ok( &(data->blocks[i]) ) ) {
+            retroflat_destroy_bitmap( &(data->blocks[i]) );
          }
       }
-      free( data.blocks );
+      free( data->blocks );
+   }
+
+   if( NULL != data ) {
+      free( data );
    }
 
    retroflat_shutdown( retval );
 
-   return 0;
+   return retval;
 }
 END_OF_MAIN()
 
