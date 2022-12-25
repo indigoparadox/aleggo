@@ -3,37 +3,44 @@
 
 ALLEGO_C_FILES := src/main.c src/grid.c
 
+CC_GCC := gcc
+CC_WATCOM := wcc386
+LD_WATCOM := wcl386
 MD := mkdir -p
 
-CFLAGS_GCC :=
-CFLAGS_WATCOM :=
+CFLAGS_GCC := -Imaug/src
+CFLAGS_WATCOM := -imaug/src
+LDFLAGS_GCC :=
 LDFLAGS_WATCOM :=
 
-SANITIZE := -Werror -Wall -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
+# Optional builds.
+ifneq ("$(RELEASE)","RELEASE")
+	CFLAGS_WATCOM += 
+	CFLAGS_GCC += -DDEBUG -Werror -Wall -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
+	LDFLAGS_GCC += -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
+endif
 
-aleggo: CC_GCC := gcc
-aleggo: CFLAGS_GCC := -DRETROFLAT_API_ALLEGRO -DRETROFLAT_OS_UNIX -DDEBUG -Imaug/src $(shell pkg-config allegro --cflags) $(SANITIZE) -DRETROFLAT_MOUSE
-aleggo: LDFLAGS_GCC := $(shell pkg-config allegro --libs) $(SANITIZE)
+ifeq ("$(API)","SDL")
+	CFLAGS_GCC += -DRETROFLAT_API_SDL $(shell pkg-config sdl --cflags)
+	LDFLAGS_GCC += $(shell pkg-config sdl --libs)
+else
+	CFLAGS_GCC += -DRETROFLAT_API_ALLEGRO $(shell pkg-config allegro --cflags)
+	LDFLAGS_GCC += $(shell pkg-config allegro --libs)
+endif
 
-aleggd.exe: CC_WATCOM := wcc386
-aleggd.exe: LD_WATCOM := wcl386
+# Target-specific options.
+aleggo: CFLAGS_GCC += -DRETROFLAT_OS_UNIX -DRETROFLAT_MOUSE
+
 aleggd.exe: CC_GCC := i586-pc-msdosdjgpp-gcc
 aleggd.exe: DEFINES := -DRETROFLAT_OS_DOS -DRETROFLAT_API_ALLEGRO 
 aleggd.exe: CFLAGS_GCC += $(DEFINES) -fgnu89-inline -I$(ALLEGRO_DJGPP_ROOT)/include
-aleggd.exe: CFLAGS_WATCOM += $(DEFINES) -bt=dos32a -imaug/src -s -3s
+aleggd.exe: CFLAGS_WATCOM += $(DEFINES) -bt=dos32a -s -3s
 aleggd.exe: LDFLAGS_GCC += -L$(ALLEGRO_DJGPP_ROOT)/lib -lalleg
 aleggd.exe: LDFLAGS_WATCOM += -l=dos32a -s -3s -k128k dos/clib3s.lib alleg.lib
 
-aleggw.exe: CC_WATCOM := wcc386
-aleggw.exe: LD_WATCOM := wcl386
 aleggw.exe: DEFINES := -DRETROFLAT_OS_WIN -DRETROFLAT_API_WIN16 -DRETROFLAT_MOUSE
-aleggw.exe: CFLAGS_WATCOM += $(DEFINES) -bt=windows -imaug/src -i$(WATCOM)/h/win
+aleggw.exe: CFLAGS_WATCOM += $(DEFINES) -bt=windows -i$(WATCOM)/h/win
 aleggw.exe: LDFLAGS_WATCOM += -l=win386
-
-ifneq ("$(RELEASE)","RELEASE")
-	CFLAGS_WATCOM += 
-	CFLAGS_GCC += -DDEBUG
-endif
 
 .PHONY: clean
 
