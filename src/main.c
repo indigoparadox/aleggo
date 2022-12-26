@@ -287,13 +287,12 @@ int main( int argc, char** argv ) {
    data->grid = calloc( GRID_TILE_D * GRID_TILE_H * GRID_TILE_W, 1 );
    data->blocks = calloc( sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
 
-   retroflat_set_assets_path( "blocks" );
-
    /* === Setup === */
 
    args.screen_w = 320;
    args.screen_h = 200;
    args.title = "Aleggo";
+   args.assets_path = "blocks";
 
    retval = retroflat_init( argc, argv, &args );
    if( RETROFLAT_OK != retval ) {
