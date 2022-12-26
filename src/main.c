@@ -281,6 +281,7 @@ int main( int argc, char** argv ) {
    int retval = 0,
       i = 0;
    struct ALEGGO_DATA* data = NULL;
+   struct RETROFLAT_ARGS args;
 
    data = calloc( sizeof( struct ALEGGO_DATA ), 1 );
    data->grid = calloc( GRID_TILE_D * GRID_TILE_H * GRID_TILE_W, 1 );
@@ -289,9 +290,13 @@ int main( int argc, char** argv ) {
    retroflat_set_assets_path( "blocks" );
 
    /* === Setup === */
-   retval = retroflat_init( "Aleggo", 320, 200, argc, argv );
+
+   args.screen_w = 320;
+   args.screen_h = 200;
+   args.title = "Aleggo";
+
+   retval = retroflat_init( argc, argv, &args );
    if( RETROFLAT_OK != retval ) {
-      retroflat_message( "Aleggo Error", "Could not initialize." );
       goto cleanup;
    }
 
