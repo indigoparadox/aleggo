@@ -57,7 +57,7 @@ obj/dos/%.o: %.c
 # WinNT
 
 aleggnt.exe: $(addprefix obj/nt/,$(subst .c,.o,$(ALEGGO_C_FILES)))
-	wcl386 -l=hxnt_win -bw $(LDFLAGS_WATCOM) -fe=$@ $^
+	wcl386 -l=nt -bw $(LDFLAGS_WATCOM) -fe=$@ $^
 
 obj/nt/%.o: %.c
 	$(MD) $(dir $@)
