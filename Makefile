@@ -8,21 +8,23 @@ CC_WATCOM := wcc386
 LD_WATCOM := wcl386
 MD := mkdir -p
 
-CFLAGS_GCC := -Imaug/src
-CFLAGS_WATCOM := -imaug/src
+GLOBAL_DEFINES :=
+
+CFLAGS_GCC := $(GLOBAL_DEFINES) -Imaug/src
+CFLAGS_WATCOM := $(GLOBAL_DEFINES) -imaug/src
 LDFLAGS_GCC :=
 LDFLAGS_WATCOM :=
 
 # Optional builds.
 ifneq ("$(RELEASE)","RELEASE")
-	CFLAGS_WATCOM += -d3
-	CFLAGS_GCC += -DDEBUG -Wall -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
+	CFLAGS_WATCOM += -we -d3
+	CFLAGS_GCC += -Werror -DDEBUG -Wall -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
 	LDFLAGS_GCC += -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
 endif
 
 ifeq ("$(API)","SDL")
 	CFLAGS_GCC += -DRETROFLAT_API_SDL $(shell pkg-config sdl2 --cflags)
-	LDFLAGS_GCC += $(shell pkg-config sdl2 --libs)
+	LDFLAGS_GCC += $(shell pkg-config sdl2 --libs) -lSDL_ttf
 else
 	CFLAGS_GCC += -DRETROFLAT_API_ALLEGRO $(shell pkg-config allegro --cflags)
 	LDFLAGS_GCC += $(shell pkg-config allegro --libs)
@@ -57,11 +59,11 @@ obj/dos/%.o: %.c
 # WinNT
 
 aleggnt.exe: $(addprefix obj/nt/,$(subst .c,.o,$(ALEGGO_C_FILES)))
-	wcl386 -l=nt -bw $(LDFLAGS_WATCOM) -fe=$@ $^
+	wlink name $@ system nt_win libr wing32 fil {$^}
 
 obj/nt/%.o: %.c
 	$(MD) $(dir $@)
-	wcc386 -bt=nt -i$(WATCOM)/h/nt -DRETROFLAT_API_WIN32 -DRETROFLAT_OS_WIN $(CFLAGS_WATCOM) -fo=$@ $(<:%.c=%)
+	wcc386 -DRETROFLAT_WING -bt=nt -i$(WATCOM)/h/nt -DRETROFLAT_API_WIN32 -DRETROFLAT_OS_WIN $(CFLAGS_WATCOM) -fo=$@ $(<:%.c=%)
 
 # Win386
 
