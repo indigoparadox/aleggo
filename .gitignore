@@ -1,3 +1,6 @@
-allego
+aleggo
 out.bmp
 obj
+*.map
+*.exe
+*.rex
