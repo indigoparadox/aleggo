@@ -18,13 +18,18 @@ LDFLAGS_WATCOM :=
 # Optional builds.
 ifneq ("$(RELEASE)","RELEASE")
 	CFLAGS_WATCOM += -we -d3
-	CFLAGS_GCC += -Werror -DDEBUG -Wall -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
+	CFLAGS_GCC += -DDEBUG -Wall -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
 	LDFLAGS_GCC += -g -fsanitize=address -fsanitize=leak -fsanitize=undefined
 endif
 
 ifeq ("$(API)","SDL")
-	CFLAGS_GCC += -DRETROFLAT_API_SDL $(shell pkg-config sdl2 --cflags)
-	LDFLAGS_GCC += $(shell pkg-config sdl2 --libs) -lSDL_ttf
+	ifeq ("$(SDL_VER)","1")
+		CFLAGS_GCC += -DRETROFLAT_API_SDL1 $(shell pkg-config sdl --cflags)
+		LDFLAGS_GCC += $(shell pkg-config sdl --libs) -lSDL_ttf
+	else
+		CFLAGS_GCC += -DRETROFLAT_API_SDL2 $(shell pkg-config sdl2 --cflags)
+		LDFLAGS_GCC += $(shell pkg-config sdl2 --libs) -lSDL_ttf
+	endif
 else
 	CFLAGS_GCC += -DRETROFLAT_API_ALLEGRO $(shell pkg-config allegro --cflags)
 	LDFLAGS_GCC += $(shell pkg-config allegro --libs)
