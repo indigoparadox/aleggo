@@ -139,20 +139,18 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
    static int toolbox_selected = 1;
    static int key_x = 0;
    static int key_y = 0;
-#ifdef RETROFLAT_MOUSE
    static int block_placed = 0;
-#endif /* RETROFLAT_MOUSE */
    int i = 0,
       input = 0,
       tile_x = 0,
       tile_y = 0;
    struct RETROFLAT_INPUT input_evt;
+   char status[255] = { 0 };
 
    /* Start loop. */
    input = retroflat_poll_input( &input_evt );
 
    switch( input ) {
-#ifdef RETROFLAT_MOUSE
    case RETROFLAT_MOUSE_B_LEFT:
       /* Left mouse button down. */
       if( !block_placed ) {
@@ -207,7 +205,6 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
          }
       }
       break;
-#endif /* RETROFLAT_MOUSE */
 
    case RETROFLAT_KEY_RIGHT:
       grid_drag( &(data->view_x), &(data->view_y), --key_x, key_y );
@@ -252,10 +249,8 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
       break;
 
    default:
-#ifdef RETROFLAT_MOUSE
       /* Stopped holding down mouse button. */
       block_placed = 0;
-#endif /* RETROFLAT_MOUSE */
       break;
    }
 
@@ -273,6 +268,12 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
 
    /* Draw toolbox on top of grid. */
    draw_toolbox( toolbox_selected, data->blocks );
+
+   maug_snprintf( status, 255, "%lu", retroflat_get_ms() );
+   retroflat_string(
+      NULL, RETROFLAT_COLOR_WHITE, status, 255, NULL, BLOCK_PX_W, 0, 0 );
+      
+   retroflat_cursor( NULL, 0 );
 
    retroflat_draw_release( NULL );
 }
