@@ -12,7 +12,7 @@ GLOBAL_DEFINES :=
 
 CFLAGS_GCC := $(GLOBAL_DEFINES) -Imaug/src
 CFLAGS_WATCOM := $(GLOBAL_DEFINES) -imaug/src
-LDFLAGS_GCC :=
+LDFLAGS_GCC := -lm
 LDFLAGS_WATCOM :=
 
 # Optional builds.
@@ -39,7 +39,7 @@ endif
 # Target-specific options.
 .PHONY: clean
 
-all: aleggo aleggd.exe aleggw.exe
+all: aleggo aleggd.exe aleggw.exe aleggo.html
 
 # Unix
 
@@ -49,6 +49,15 @@ aleggo: $(addprefix obj/$(shell uname -s)/,$(subst .c,.o,$(ALEGGO_C_FILES)))
 obj/$(shell uname -s)/%.o: %.c
 	$(MD) $(dir $@)
 	$(CC_GCC) -c -o $@ $< -DRETROFLAT_OS_UNIX $(CFLAGS_GCC)
+
+# WASM
+
+aleggo.html: $(addprefix obj/wasm/,$(subst .c,.o,$(ALEGGO_C_FILES)))
+	emcc -o $@ $^ -s USE_SDL=2 -s USE_SDL_TTF=2
+
+obj/wasm/%.o: %.c
+	$(MD) $(dir $@)
+	emcc -c -o $@ $< -DRETROFLAT_OS_WASM -DRETROFLAT_API_SDL2 -s USE_SDL=2 -Imaug/src -s USE_SDL_TTF=2
 
 # DOS
 

@@ -327,6 +327,8 @@ int main( int argc, char** argv ) {
 
 cleanup:
 
+#ifndef RETROFLAT_OS_WASM
+
    if( NULL != data->grid ) {
       free( data->grid );
    }
@@ -345,6 +347,8 @@ cleanup:
    }
 
    retroflat_shutdown( retval );
+
+#endif /* !RETROFLAT_OS_WASM */
 
    return retval;
 }
