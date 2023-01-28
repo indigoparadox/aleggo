@@ -1,4 +1,8 @@
 
+#ifdef BLOCKS_XPM
+#include "blocks_xpm.h"
+#endif /* BLOCKS_XPM */
+
 #define MAUG_C
 #include <maug.h>
 
@@ -247,7 +251,7 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
          GRID_TILE_W, GRID_TILE_H, GRID_TILE_D );
       break;
 
-   case RETROFLAT_KEY_Q:
+   case RETROFLAT_KEY_ESC:
       retroflat_quit( 0 );
       break;
 
@@ -306,8 +310,13 @@ int main( int argc, char** argv ) {
    /* === Load Assets === */
 
    for( i = 1 ; BLOCK_MAX > i ; i++ ) {
+#ifdef BLOCKS_XPM
+      retval = retroflat_load_xpm(
+         gc_block_filenames[i], &(data->blocks[i]) );
+#else
       retval = retroflat_load_bitmap(
          gc_block_filenames[i], &(data->blocks[i]) );
+#endif /* BLOCKS_XPM */
       if( RETROFLAT_OK != retval ) {
          retroflat_message(
             "Aleggo Error", "Could not load bitmap: %s", gc_block_filenames[i]
@@ -315,7 +324,6 @@ int main( int argc, char** argv ) {
          goto cleanup;
       }
    }
-
 
    /* === Main Loop === */
 
