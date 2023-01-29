@@ -4,3 +4,9 @@ obj
 *.map
 *.exe
 *.rex
+*.html
+*.js
+*.wasm
+src/blocks_*.h
+*.ale
+*.sdl
