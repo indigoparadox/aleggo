@@ -41,11 +41,17 @@ $(eval $(call TGTWINICO,aleggo))
 
 $(eval $(call TGTWINNT,aleggo))
 
+$(eval $(call TGTWINSDL,aleggo))
+
 # Win386
 
 $(eval $(call TGTWIN16,aleggo))
 
 $(eval $(call TGTWIN386,aleggo))
+
+# OS/2
+
+$(eval $(call TGTOS2SDL,aleggo))
 
 # Clean
 
