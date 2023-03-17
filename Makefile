@@ -2,7 +2,6 @@
 # vim: ft=make noexpandtab
 
 C_FILES := src/main.c src/grid.c
-WING=1
 
 include maug/Makefile.inc
 
@@ -35,19 +34,21 @@ $(eval $(call TGTWASMSDL,aleggo))
 
 $(eval $(call TGTDOSALE,aleggo))
 
-# WinNT
+# Win386
 
 $(eval $(call TGTWINICO,aleggo))
+
+$(eval $(call TGTWIN386,aleggo))
+
+WING=1
+
+$(eval $(call TGTWIN16,aleggo))
+
+# WinNT
 
 $(eval $(call TGTWINNT,aleggo))
 
 $(eval $(call TGTWINSDL,aleggo))
-
-# Win386
-
-$(eval $(call TGTWIN16,aleggo))
-
-$(eval $(call TGTWIN386,aleggo))
 
 # OS/2
 
