@@ -9,6 +9,9 @@
 #define RETROFLT_C
 #include <retroflt.h>
 
+#define RETROCON_C
+#include <retrocon.h>
+
 #define BLOCKS_C
 #include "blocks.h"
 #include "grid.h"
@@ -18,6 +21,7 @@ struct ALEGGO_DATA {
    unsigned char* grid;
    int view_x;
    int view_y;
+   struct RETROCON con;
 };
 
 void draw_toolbox(
@@ -157,6 +161,8 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
    /* Start loop. */
    input = retroflat_poll_input( &input_evt );
 
+   retrocon_input( &(data->con), &input );
+
    switch( input ) {
    case RETROFLAT_MOUSE_B_LEFT:
       /* Left mouse button down. */
@@ -279,6 +285,8 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
    maug_snprintf( status, 255, "%lu", retroflat_get_ms() );
    retroflat_string(
       NULL, RETROFLAT_COLOR_WHITE, status, 255, NULL, BLOCK_PX_W, 0, 0 );
+
+   retrocon_display( &(data->con), NULL );
       
    retroflat_cursor( NULL, 0 );
 
@@ -294,6 +302,10 @@ int main( int argc, char** argv ) {
    data = calloc( sizeof( struct ALEGGO_DATA ), 1 );
    data->grid = calloc( GRID_TILE_D * GRID_TILE_H * GRID_TILE_W, 1 );
    data->blocks = calloc( sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
+
+   data->con.lbuffer_color = RETROFLAT_COLOR_WHITE;
+   data->con.sbuffer_color = RETROFLAT_COLOR_GRAY;
+   data->con.bg_color = RETROFLAT_COLOR_BLACK;
 
    /* === Setup === */
 
