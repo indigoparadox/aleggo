@@ -303,6 +303,9 @@ int main( int argc, char** argv ) {
    data->grid = calloc( GRID_TILE_D * GRID_TILE_H * GRID_TILE_W, 1 );
    data->blocks = calloc( sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
 
+   retval = retrocon_init( &(data->con) );
+   maug_cleanup_if_not_ok();
+
    data->con.lbuffer_color = RETROFLAT_COLOR_WHITE;
    data->con.sbuffer_color = RETROFLAT_COLOR_GRAY;
    data->con.bg_color = RETROFLAT_COLOR_BLACK;
