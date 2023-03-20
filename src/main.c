@@ -156,7 +156,7 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
       tile_x = 0,
       tile_y = 0;
    struct RETROFLAT_INPUT input_evt;
-   char status[255] = { 0 };
+   char status[256] = { 0 };
 
    /* Start loop. */
    input = retroflat_poll_input( &input_evt );
@@ -282,6 +282,7 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
    /* Draw toolbox on top of grid. */
    draw_toolbox( toolbox_selected, data->blocks );
 
+   maug_mzero( status, 256 );
    maug_snprintf( status, 255, "%lu", retroflat_get_ms() );
    retroflat_string(
       NULL, RETROFLAT_COLOR_WHITE, status, 255, NULL, BLOCK_PX_W, 0, 0 );
@@ -311,6 +312,8 @@ int main( int argc, char** argv ) {
    data->con.bg_color = RETROFLAT_COLOR_BLACK;
 
    /* === Setup === */
+
+   maug_mzero( &args, sizeof( struct RETROFLAT_ARGS ) );
 
    args.screen_w = 320;
    args.screen_h = 200;
