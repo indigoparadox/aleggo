@@ -9,8 +9,10 @@
 #define RETROFLT_C
 #include <retroflt.h>
 
+#ifndef DISABLE_RETROCON
 #define RETROCON_C
 #include <retrocon.h>
+#endif /* !DISABLE_RETROCON */
 
 #define BLOCKS_C
 #include "blocks.h"
@@ -161,7 +163,7 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
    /* Start loop. */
    input = retroflat_poll_input( &input_evt );
 
-   retrocon_input( &(data->con), &input );
+   retrocon_input( &(data->con), &input, &input_evt );
 
    switch( input ) {
    case RETROFLAT_MOUSE_B_LEFT:
@@ -336,7 +338,7 @@ int main( int argc, char** argv ) {
          gc_block_filenames[i], &(data->blocks[i]) );
 #endif /* BLOCKS_XPM */
       if( RETROFLAT_OK != retval ) {
-         retroflat_message(
+         retroflat_message( RETROFLAT_MSG_FLAG_ERROR,
             "Aleggo Error", "Could not load bitmap: %s", gc_block_filenames[i]
          );
          goto cleanup;
