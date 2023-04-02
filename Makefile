@@ -1,6 +1,7 @@
 
 # vim: ft=make noexpandtab
 
+WING=1
 C_FILES := src/main.c src/grid.c
 
 include maug/Makefile.inc
@@ -11,10 +12,6 @@ include maug/Makefile.inc
 all: aleggo.sdl aleggo.ale aleggod.exe aleggow.exe aleggo.html aleggow3.exe
 
 $(eval $(call DIRTOXPMS,blocks,src))
-
-# Nintendo DS
-
-$(eval $(call TGTNDSLIBN,aleggo,aleggo.bmp))
 
 # Unix Allegro
 
@@ -39,8 +36,6 @@ $(eval $(call TGTDOSALE,aleggo))
 $(eval $(call TGTWINICO,aleggo))
 
 $(eval $(call TGTWIN386,aleggo))
-
-WING=1
 
 $(eval $(call TGTWIN16,aleggo))
 
