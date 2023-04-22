@@ -28,3 +28,7 @@ out.bmp
 src/blocks_*.h
 src/blocks_xpm.h
 *.wasm
+gmon.*
+log.txt
+*.ico
+*.rc
