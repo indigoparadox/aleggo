@@ -1,7 +1,8 @@
 
 # vim: ft=make noexpandtab
 
-WING=1
+#WING=1
+VDP=1
 C_FILES := src/main.c src/grid.c
 
 include maug/Makefile.inc
@@ -11,7 +12,7 @@ include maug/Makefile.inc
 
 all: aleggo.sdl aleggo.ale aleggod.exe aleggow.exe aleggo.html aleggow3.exe
 
-$(eval $(call DIRTOXPMS,blocks,src))
+#$(eval $(call DIRTOXPMS,blocks,src))
 
 # Unix Allegro
 
