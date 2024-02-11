@@ -153,8 +153,8 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
    static int key_x = 0;
    static int key_y = 0;
    static int block_placed = 0;
+   RETROFLAT_IN_KEY input = 0;
    int i = 0,
-      input = 0,
       tile_x = 0,
       tile_y = 0;
    struct RETROFLAT_INPUT input_evt;
@@ -302,6 +302,8 @@ int main( int argc, char** argv ) {
    struct ALEGGO_DATA* data = NULL;
    struct RETROFLAT_ARGS args;
 
+   logging_init();
+
    data = calloc( sizeof( struct ALEGGO_DATA ), 1 );
    data->grid = calloc( GRID_TILE_D * GRID_TILE_H * GRID_TILE_W, 1 );
    data->blocks = calloc( sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
@@ -317,8 +319,6 @@ int main( int argc, char** argv ) {
 
    maug_mzero( &args, sizeof( struct RETROFLAT_ARGS ) );
 
-   args.screen_w = 320;
-   args.screen_h = 200;
    args.title = "Aleggo";
    args.assets_path = "blocks";
 
@@ -347,7 +347,7 @@ int main( int argc, char** argv ) {
 
    /* === Main Loop === */
 
-   retroflat_loop( (retroflat_loop_iter)aleggo_loop, data );
+   retroflat_loop( (retroflat_loop_iter)aleggo_loop, NULL, data );
 
  #if 0
    save_screenshot( buffer, "out.bmp" );
