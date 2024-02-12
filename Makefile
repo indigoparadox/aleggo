@@ -4,6 +4,7 @@
 #WING=1
 VDP=1
 C_FILES := src/main.c src/grid.c
+RETROFLAT_DOS_MEM_LARGE=1
 
 include maug/Makefile.inc
 
@@ -31,6 +32,8 @@ $(eval $(call TGTWASMSDL,aleggo))
 # DOS
 
 $(eval $(call TGTDOSALE,aleggo))
+
+$(eval $(call TGTDOSBIOS,aleggo))
 
 # Win386
 
