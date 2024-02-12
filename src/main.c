@@ -19,11 +19,12 @@
 #include "grid.h"
 
 struct ALEGGO_DATA {
-   struct RETROFLAT_BITMAP* blocks;
-   unsigned char* grid;
+   MAUG_MHANDLE blocks_h;
+   MAUG_MHANDLE grid_h;
    int view_x;
    int view_y;
    struct RETROCON con;
+   uint8_t dirty;
 };
 
 void draw_toolbox(
@@ -126,10 +127,21 @@ void draw_grid(
 
             /* TODO: Optimize drawing off-screen out. */
             grid_to_screen_coords( &px_x, &px_y, x, y, view_x, view_y );
+            px_y -= (z * 4);
+
+            if(
+               (size_t)(px_x + BLOCK_PX_W) >= retroflat_screen_w() ||
+               (size_t)(px_y + BLOCK_PX_H) >= retroflat_screen_h()
+            ) {
+               continue;
+            }
+
+            assert( 0 <= px_x );
+            assert( 0 <= px_y );
 
             retroflat_blit_bitmap(
                NULL, &(blocks[grid[grid_idx( z, y, x )]]),
-               0, 0, px_x, px_y - (z * 4), BLOCK_PX_W, BLOCK_PX_H );
+               0, 0, px_x, px_y, BLOCK_PX_W, BLOCK_PX_H );
          }
       }
    }
@@ -159,6 +171,15 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
       tile_y = 0;
    struct RETROFLAT_INPUT input_evt;
    char status[256] = { 0 };
+   struct RETROFLAT_BITMAP* blocks = NULL;
+   uint8_t* grid = NULL;
+   MERROR_RETVAL retval = MERROR_OK;
+
+   maug_mlock( data->grid_h, grid );
+   maug_cleanup_if_null_alloc( uint8_t*, grid );
+
+   maug_mlock( data->blocks_h, blocks );
+   maug_cleanup_if_null_alloc( struct RETROFLAT_BITMAP*, blocks );
 
    /* Start loop. */
    input = retroflat_poll_input( &input_evt );
@@ -190,7 +211,7 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
             input_evt.mouse_x, input_evt.mouse_y, data->view_x, data->view_y );
 
          if( 0 <= grid_place(
-            toolbox_selected, tile_x, tile_y, data->grid,
+            toolbox_selected, tile_x, tile_y, grid,
             GRID_TILE_W, GRID_TILE_H, GRID_TILE_D
          ) ) {
             /* Block was placed. */
@@ -203,6 +224,7 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
             input_evt.mouse_x, input_evt.mouse_y );
          }
       }
+      data->dirty = 1;
       break;
 
    case RETROFLAT_MOUSE_B_RIGHT:
@@ -213,40 +235,48 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
             &tile_x, &tile_y,
             input_evt.mouse_x, input_evt.mouse_y, data->view_x, data->view_y );
          if( 0 <=  grid_remove( 
-            tile_x, tile_y, data->grid, GRID_TILE_W, GRID_TILE_H, GRID_TILE_D
+            tile_x, tile_y, grid, GRID_TILE_W, GRID_TILE_H, GRID_TILE_D
          ) ) {
             /* Block was removed. */
             block_placed = -1;
          }
       }
+      data->dirty = 1;
       break;
 
    case RETROFLAT_KEY_RIGHT:
       grid_drag( &(data->view_x), &(data->view_y), --key_x, key_y );
+      data->dirty = 1;
       break;
 
    case RETROFLAT_KEY_LEFT:
       grid_drag( &(data->view_x), &(data->view_y), ++key_x, key_y );
+      data->dirty = 1;
       break;
 
    case RETROFLAT_KEY_UP:
       grid_drag( &(data->view_x), &(data->view_y), key_x, ++key_y );
+      data->dirty = 1;
       break;
 
    case RETROFLAT_KEY_DOWN:
       grid_drag( &(data->view_x), &(data->view_y), key_x, --key_y );
+      data->dirty = 1;
       break;
 
    case RETROFLAT_KEY_1:
       toolbox_selected = 1;
+      data->dirty = 1;
       break;
 
    case RETROFLAT_KEY_2:
       toolbox_selected = 2;
+      data->dirty = 1;
       break;
 
    case RETROFLAT_KEY_3:
       toolbox_selected = 3;
+      data->dirty = 1;
       break;
 
    case RETROFLAT_KEY_SPACE:
@@ -255,8 +285,9 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
          retroflat_screen_w() / 2, retroflat_screen_h() / 2,
          data->view_x, data->view_y );
       grid_place(
-         toolbox_selected, tile_x, tile_y, data->grid,
+         toolbox_selected, tile_x, tile_y, grid,
          GRID_TILE_W, GRID_TILE_H, GRID_TILE_D );
+      data->dirty = 1;
       break;
 
    case RETROFLAT_KEY_ESC:
@@ -273,27 +304,48 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
 
    retroflat_draw_lock( NULL );
 
-   /* Clear screen to gray. */
-   retroflat_rect(
-      NULL, RETROFLAT_COLOR_GRAY, 0, 0,
-      retroflat_screen_w(), retroflat_screen_h(),
-      RETROFLAT_FLAGS_FILL );
+   if( data->dirty ) {
+      /* Clear screen to gray. */
+      retroflat_rect(
+         NULL, RETROFLAT_COLOR_GRAY, 0, 0,
+         retroflat_screen_w(), retroflat_screen_h(),
+         RETROFLAT_FLAGS_FILL );
 
-   draw_grid( data->view_x, data->view_y, data->grid, data->blocks );
+      draw_grid( data->view_x, data->view_y, grid, blocks );
 
-   /* Draw toolbox on top of grid. */
-   draw_toolbox( toolbox_selected, data->blocks );
+      /* Draw toolbox on top of grid. */
+      draw_toolbox( toolbox_selected, blocks );
 
-   maug_mzero( status, 256 );
-   maug_snprintf( status, 255, "%lu", retroflat_get_ms() );
-   retroflat_string(
-      NULL, RETROFLAT_COLOR_WHITE, status, 255, NULL, BLOCK_PX_W, 0, 0 );
+      /*
+      maug_mzero( status, 256 );
+      maug_snprintf( status, 255, "%lu", retroflat_get_ms() );
+      retroflat_string(
+         NULL, RETROFLAT_COLOR_WHITE, status, 255, NULL, BLOCK_PX_W, 0, 0
+      );
+      */
+
+      retroflat_cursor( NULL, 0 );
+
+      data->dirty = 0;
+   }
 
    retrocon_display( &(data->con), NULL );
-      
-   retroflat_cursor( NULL, 0 );
-
+         
    retroflat_draw_release( NULL );
+
+cleanup:
+
+   if( NULL != grid ) {
+      maug_munlock( data->grid_h, grid );
+   }
+
+   if( NULL != blocks ) {
+      maug_munlock( data->blocks_h, blocks );
+   }
+
+   if( MERROR_OK != retval ) {
+      retroflat_quit( retval );
+   }
 }
 
 int main( int argc, char** argv ) {
@@ -301,12 +353,26 @@ int main( int argc, char** argv ) {
       i = 0;
    struct ALEGGO_DATA* data = NULL;
    struct RETROFLAT_ARGS args;
+   struct RETROFLAT_BITMAP* blocks = NULL;
+   uint8_t* grid = NULL;
 
    logging_init();
 
    data = calloc( sizeof( struct ALEGGO_DATA ), 1 );
-   data->grid = calloc( GRID_TILE_D * GRID_TILE_H * GRID_TILE_W, 1 );
-   data->blocks = calloc( sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
+   maug_cleanup_if_null_alloc( struct ALEGGO_DATA*, data );
+
+   data->grid_h =
+      maug_malloc( 1, GRID_TILE_D * GRID_TILE_H * GRID_TILE_W );
+   maug_cleanup_if_null_alloc( MAUG_MHANDLE, data->grid_h );
+   maug_mlock( data->grid_h, grid );
+   maug_cleanup_if_null_alloc( uint8_t*, grid );
+   maug_mzero( grid, GRID_TILE_D * GRID_TILE_H * GRID_TILE_W );
+
+   data->blocks_h =
+      maug_malloc( sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
+   maug_cleanup_if_null_alloc( MAUG_MHANDLE, data->blocks_h );
+   maug_mlock( data->blocks_h, blocks );
+   maug_mzero( blocks, sizeof( struct RETROFLAT_BITMAP ) * BLOCK_MAX );
 
    retval = retrocon_init( &(data->con) );
    maug_cleanup_if_not_ok();
@@ -314,6 +380,8 @@ int main( int argc, char** argv ) {
    data->con.lbuffer_color = RETROFLAT_COLOR_WHITE;
    data->con.sbuffer_color = RETROFLAT_COLOR_GRAY;
    data->con.bg_color = RETROFLAT_COLOR_BLACK;
+
+   data->dirty = 1;
 
    /* === Setup === */
 
@@ -332,10 +400,10 @@ int main( int argc, char** argv ) {
    for( i = 1 ; BLOCK_MAX > i ; i++ ) {
 #ifdef BLOCKS_XPM
       retval = retroflat_load_xpm(
-         gc_block_filenames[i], &(data->blocks[i]) );
+         gc_block_filenames[i], &(blocks[i]) );
 #else
       retval = retroflat_load_bitmap(
-         gc_block_filenames[i], &(data->blocks[i]) );
+         gc_block_filenames[i], &(blocks[i]) );
 #endif /* BLOCKS_XPM */
       if( RETROFLAT_OK != retval ) {
          retroflat_message( RETROFLAT_MSG_FLAG_ERROR,
@@ -344,6 +412,9 @@ int main( int argc, char** argv ) {
          goto cleanup;
       }
    }
+
+   maug_munlock( data->grid_h, grid );
+   maug_munlock( data->blocks_h, blocks );
 
    /* === Main Loop === */
 
@@ -357,17 +428,19 @@ cleanup:
 
 #ifndef RETROFLAT_OS_WASM
 
-   if( NULL != data->grid ) {
-      free( data->grid );
+   if( NULL != data->grid_h ) {
+      maug_mfree( data->grid_h );
    }
 
-   if( NULL != data->blocks ) {
+   if( NULL != data->blocks_h ) {
+      maug_mlock( data->blocks_h, blocks );
       for( i = 0 ; BLOCK_MAX > i ; i++ ) {
-         if( retroflat_bitmap_ok( &(data->blocks[i]) ) ) {
-            retroflat_destroy_bitmap( &(data->blocks[i]) );
+         if( retroflat_bitmap_ok( &(blocks[i]) ) ) {
+            retroflat_destroy_bitmap( &(blocks[i]) );
          }
       }
-      free( data->blocks );
+      maug_munlock( data->blocks_h, blocks );
+      maug_mfree( data->blocks_h );
    }
 
    if( NULL != data ) {
@@ -375,6 +448,8 @@ cleanup:
    }
 
    retroflat_shutdown( retval );
+
+   logging_shutdown();
 
 #endif /* !RETROFLAT_OS_WASM */
 
