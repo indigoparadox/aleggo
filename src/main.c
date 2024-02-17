@@ -403,7 +403,7 @@ int main( int argc, char** argv ) {
          gc_block_filenames[i], &(blocks[i]) );
 #else
       retval = retroflat_load_bitmap(
-         gc_block_filenames[i], &(blocks[i]) );
+         gc_block_filenames[i], &(blocks[i]), 0 );
 #endif /* BLOCKS_XPM */
       if( RETROFLAT_OK != retval ) {
          retroflat_message( RETROFLAT_MSG_FLAG_ERROR,
