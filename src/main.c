@@ -5,12 +5,9 @@
 
 #define MAUG_C
 #include <maug.h>
-
-#define RETROFLT_C
 #include <retroflt.h>
 
 #ifndef DISABLE_RETROCON
-#define RETROCON_C
 #include <retrocon.h>
 #endif /* !DISABLE_RETROCON */
 
@@ -46,7 +43,8 @@ void draw_toolbox(
    
       retroflat_blit_bitmap(
          NULL, &(blocks[i]),
-         0, 0, 0, (i - 1) * BLOCK_PX_H, BLOCK_PX_W, BLOCK_PX_H );
+         0, 0, 0, (i - 1) * BLOCK_PX_H, BLOCK_PX_W, BLOCK_PX_H,
+         RETROFLAT_INSTANCE_NULL );
    }
 }
 
@@ -141,7 +139,8 @@ void draw_grid(
 
             retroflat_blit_bitmap(
                NULL, &(blocks[grid[grid_idx( z, y, x )]]),
-               0, 0, px_x, px_y, BLOCK_PX_W, BLOCK_PX_H );
+               0, 0, px_x, px_y, BLOCK_PX_W, BLOCK_PX_H,
+               RETROFLAT_INSTANCE_NULL );
          }
       }
    }
@@ -324,7 +323,7 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
       );
       */
 
-      retroflat_cursor( NULL, 0 );
+      /* retroflat_cursor( NULL, 0 ); */
 
       data->dirty = 0;
    }
