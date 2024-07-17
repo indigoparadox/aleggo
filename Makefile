@@ -5,6 +5,7 @@
 VDP=1
 C_FILES := src/main.c src/grid.c
 RETROFLAT_DOS_MEM_LARGE=1
+GLOBAL_DEFINES += -DRETROCON_TRACE_LVL=1
 
 include maug/Makefile.inc
 

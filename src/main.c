@@ -6,10 +6,9 @@
 #define MAUG_C
 #include <maug.h>
 #include <retroflt.h>
-
-#ifndef DISABLE_RETROCON
+#include <retrofnt.h>
+#include <retrogui.h>
 #include <retrocon.h>
-#endif /* !DISABLE_RETROCON */
 
 #define BLOCKS_C
 #include "blocks.h"
@@ -173,6 +172,7 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
    struct RETROFLAT_BITMAP* blocks = NULL;
    uint8_t* grid = NULL;
    MERROR_RETVAL retval = MERROR_OK;
+   retrogui_idc_t con_idc = RETROGUI_IDC_NONE;
 
    maug_mlock( data->grid_h, grid );
    maug_cleanup_if_null_alloc( uint8_t*, grid );
@@ -183,7 +183,10 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
    /* Start loop. */
    input = retroflat_poll_input( &input_evt );
 
-   retrocon_input( &(data->con), &input, &input_evt );
+   retrocon_input( &(data->con), &input, &input_evt, &con_idc, NULL, 0 );
+   if( RETROCON_IDC_CLOSE == con_idc ) {
+      data->dirty = 1;
+   }
 
    switch( input ) {
    case RETROFLAT_MOUSE_B_LEFT:
@@ -373,13 +376,6 @@ int main( int argc, char** argv ) {
    maug_mlock( data->blocks_h, blocks );
    maug_mzero( blocks, sizeof( struct RETROFLAT_BITMAP ) * BLOCK_MAX );
 
-   retval = retrocon_init( &(data->con) );
-   maug_cleanup_if_not_ok();
-
-   data->con.lbuffer_color = RETROFLAT_COLOR_WHITE;
-   data->con.sbuffer_color = RETROFLAT_COLOR_GRAY;
-   data->con.bg_color = RETROFLAT_COLOR_BLACK;
-
    data->dirty = 1;
 
    /* === Setup === */
@@ -393,6 +389,15 @@ int main( int argc, char** argv ) {
    if( RETROFLAT_OK != retval ) {
       goto cleanup;
    }
+
+   retrocon_init( &(data->con), "unscii-8.hex",
+      (retroflat_screen_w() >> 1) - 100,
+      (retroflat_screen_h() >> 1) - 50,
+      200, 100 );
+
+   data->con.lbuffer_color = RETROFLAT_COLOR_WHITE;
+   data->con.sbuffer_color = RETROFLAT_COLOR_GRAY;
+   data->con.bg_color = RETROFLAT_COLOR_BLACK;
 
    /* === Load Assets === */
 
@@ -426,6 +431,8 @@ int main( int argc, char** argv ) {
 cleanup:
 
 #ifndef RETROFLAT_OS_WASM
+
+   retrocon_shutdown( &(data->con) );
 
    if( NULL != data->grid_h ) {
       maug_mfree( data->grid_h );
