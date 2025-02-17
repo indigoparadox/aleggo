@@ -183,7 +183,7 @@ void aleggo_loop( struct ALEGGO_DATA* data ) {
    /* Start loop. */
    input = retroflat_poll_input( &input_evt );
 
-   retrocon_input( &(data->con), &input, &input_evt, &con_idc, NULL, 0 );
+   retrocon_input( &(data->con), &input, &input_evt, &con_idc, NULL );
    if( RETROCON_IDC_CLOSE == con_idc ) {
       data->dirty = 1;
    }
