@@ -8,6 +8,7 @@
 #include <retroflt.h>
 #include <retrofnt.h>
 #include <retrogui.h>
+#include <retrowin.h>
 #include <retrocon.h>
 
 #define BLOCKS_C
