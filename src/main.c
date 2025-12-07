@@ -435,11 +435,11 @@ cleanup:
 
    retrocon_shutdown( &(data->con) );
 
-   if( NULL != data->grid_h ) {
+   if( (MAUG_MHANDLE)NULL != data->grid_h ) {
       maug_mfree( data->grid_h );
    }
 
-   if( NULL != data->blocks_h ) {
+   if( (MAUG_MHANDLE)NULL != data->blocks_h ) {
       maug_mlock( data->blocks_h, blocks );
       for( i = 0 ; BLOCK_MAX > i ; i++ ) {
          if( retroflat_bitmap_ok( &(blocks[i]) ) ) {
