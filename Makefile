@@ -12,7 +12,7 @@ include maug/Makefile.inc
 # Target-specific options.
 .PHONY: clean
 
-all: aleggo.$(shell uname -m).sdl aleggo.$(shell uname -m).ale aleggod.exe aleggow.exe aleggo.html aleggow3.exe
+all: aleggo.$(MAUG_UNIX).sdl aleggo.$(MAUG_UNIX).ale aleggod.exe aleggow.exe aleggo.html aleggow3.exe
 
 #$(eval $(call DIRTOXPMS,blocks,src))
 
