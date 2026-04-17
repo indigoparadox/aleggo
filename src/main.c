@@ -364,17 +364,15 @@ int main( int argc, char** argv ) {
    data = calloc( sizeof( struct ALEGGO_DATA ), 1 );
    maug_cleanup_if_null_alloc( struct ALEGGO_DATA*, data );
 
-   data->grid_h =
-      maug_malloc( 1, GRID_TILE_D * GRID_TILE_H * GRID_TILE_W );
-   maug_cleanup_if_null_alloc( MAUG_MHANDLE, data->grid_h );
+   maug_malloc_test( data->grid_h, 1, GRID_TILE_D * GRID_TILE_H * GRID_TILE_W );
    maug_mlock( data->grid_h, grid );
-   maug_cleanup_if_null_alloc( uint8_t*, grid );
+   maug_cleanup_if_null_lock( uint8_t*, grid );
    maug_mzero( grid, GRID_TILE_D * GRID_TILE_H * GRID_TILE_W );
 
-   data->blocks_h =
-      maug_malloc( sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
-   maug_cleanup_if_null_alloc( MAUG_MHANDLE, data->blocks_h );
+   maug_malloc_test(
+      data->blocks_h, sizeof( struct RETROFLAT_BITMAP ), BLOCK_MAX );
    maug_mlock( data->blocks_h, blocks );
+   maug_cleanup_if_null_lock( struct RETROFLAT_BITMAP*, blocks );
    maug_mzero( blocks, sizeof( struct RETROFLAT_BITMAP ) * BLOCK_MAX );
 
    data->dirty = 1;
